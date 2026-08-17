@@ -1,0 +1,157 @@
+name: Sync Code from Zip Archive
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'zip/*.zip'
+      - 'zip/*.7z'
+      - 'zip/*.tar.gz'
+      - 'zip/*.tar'
+      - 'zip/*.tgz'
+      - 'zip/**.zip'
+      - 'zip/**.7z'
+      - 'zip/**.tar.gz'
+      - 'zip/**.tar'
+      - 'zip/**.tgz'
+
+concurrency:
+  group: sync-from-zip-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  extract-and-sync:
+    name: Extract Archive & Overwrite Codebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve GitHub Auth Token
+        id: auth-token
+        run: |
+          # Prioritize custom Personal Access Token from secrets for full workflow modification permissions
+          if [ -n "${{ secrets.GH_PAT }}" ]; then
+            echo "Using secrets.GH_PAT"
+            echo "TOKEN=${{ secrets.GH_PAT }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.PERSONAL_ACCESS_TOKEN }}" ]; then
+            echo "Using secrets.PERSONAL_ACCESS_TOKEN"
+            echo "TOKEN=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.GH_TOKEN }}" ]; then
+            echo "Using secrets.GH_TOKEN"
+            echo "TOKEN=${{ secrets.GH_TOKEN }}" >> $GITHUB_OUTPUT
+          else
+            echo "Using default secrets.GITHUB_TOKEN"
+            echo "TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.auth-token.outputs.TOKEN }}
+          fetch-depth: 0
+
+      - name: Install Extraction Utilities
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq p7zip-full unzip tar rsync
+
+      - name: Locate Latest Archive in zip/
+        id: find-archive
+        run: |
+          # Find the newest archive file inside zip/
+          ARCHIVE_FILE=$(find zip/ -maxdepth 1 -type f \( -name "*.zip" -o -name "*.7z" -o -name "*.tar.gz" -o -name "*.tar" -o -name "*.tgz" \) -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | awk '{print $2}')
+          
+          if [ -z "$ARCHIVE_FILE" ]; then
+            echo "No archive found in zip/ directory. Nothing to extract."
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found archive: $ARCHIVE_FILE"
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "file=$ARCHIVE_FILE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract Archive & Synchronize Files
+        if: steps.find-archive.outputs.found == 'true'
+        run: |
+          ARCHIVE_PATH="${{ steps.find-archive.outputs.file }}"
+          EXTRACT_DIR="/tmp/unpacked_project"
+          rm -rf "$EXTRACT_DIR"
+          mkdir -p "$EXTRACT_DIR"
+
+          echo "Extracting $ARCHIVE_PATH to $EXTRACT_DIR..."
+          case "$ARCHIVE_PATH" in
+            *.zip)
+              unzip -q -o "$ARCHIVE_PATH" -d "$EXTRACT_DIR"
+              ;;
+            *.7z)
+              7z x "$ARCHIVE_PATH" -o"$EXTRACT_DIR" -y
+              ;;
+            *.tar.gz|*.tgz)
+              tar -xzf "$ARCHIVE_PATH" -C "$EXTRACT_DIR"
+              ;;
+            *.tar)
+              tar -xf "$ARCHIVE_PATH" -C "$EXTRACT_DIR"
+              ;;
+            *)
+              echo "Unsupported archive format: $ARCHIVE_PATH"
+              exit 1
+              ;;
+          esac
+
+          # If the archive wrapped everything inside a single top-level folder (e.g. project-main/), detect and flatten
+          ITEM_COUNT=$(find "$EXTRACT_DIR" -maxdepth 1 -mindepth 1 | wc -l)
+          FIRST_ITEM=$(find "$EXTRACT_DIR" -maxdepth 1 -mindepth 1)
+          if [ "$ITEM_COUNT" -eq 1 ] && [ -d "$FIRST_ITEM" ]; then
+            echo "Detected single wrapping directory ($FIRST_ITEM). Flattening..."
+            SOURCE_DIR="$FIRST_ITEM"
+          else
+            SOURCE_DIR="$EXTRACT_DIR"
+          fi
+
+          echo "Synchronizing extracted files to workspace root..."
+          # Exclude .git and zip directory to preserve git history and upload folder
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='zip' \
+            "$SOURCE_DIR/" ./
+
+          echo "Sync completed successfully."
+
+      - name: Cleanup Processed Archive and Temp Files
+        if: steps.find-archive.outputs.found == 'true'
+        run: |
+          echo "Removing processed archive to prevent repository bloat..."
+          ARCHIVE_PATH="${{ steps.find-archive.outputs.file }}"
+          rm -f "$ARCHIVE_PATH"
+          rm -rf /tmp/unpacked_project
+          # Ensure zip directory remains clean with a .gitkeep
+          mkdir -p zip
+          touch zip/.gitkeep
+          echo "Archive cleanup completed successfully."
+
+      - name: Commit and Push Changes (Amend into Single Commit)
+        if: steps.find-archive.outputs.found == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.auth-token.outputs.TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add -A
+          
+          # Check if there are changes or if we are amending the zip upload commit
+          if [ -f "commit_message.txt" ] && [ -s "commit_message.txt" ]; then
+            echo "Amending commit using commit_message.txt..."
+            git commit --amend -F commit_message.txt
+          else
+            echo "Amending commit with default message..."
+            git commit --amend -m "Update codebase from zip archive [skip ci]"
+          fi
+          
+          # Force push to replace the temporary upload commit with the final clean commit
+          echo "Force-pushing amended single commit to ${{ github.ref }}..."
+          git push --force origin HEAD:${{ github.ref }}
+          echo "Successfully synchronized codebase in 1 single clean commit."

@@ -1,0 +1,44 @@
+# 🧠 Contexto de Inteligencia Artificial (AI_CONTEXT.md)
+
+Este archivo proporciona contexto técnico crítico para cualquier modelo de lenguaje o agente autónomo que trabaje, mantenga o extienda el código base de **Recuperador Pro**.
+
+---
+
+## 🎯 Regla Fundamental de Negocio
+
+> **CRÍTICO: NO MOSTRAR ARCHIVOS ACTIVOS DE LA GALERÍA NI REPRODUCTORES**
+> La aplicación está diseñada para recuperar **fotos, videos y pistas de audio eliminadas, perdidas, residuales o en papelera**.
+> Bajo ninguna circunstancia se deben mostrar fotos, videos o canciones que el usuario ya tenga guardados y visibles en su galería normal o biblioteca activa.
+> Cualquier nuevo método de escaneo DEBE verificar y respetar `loadActiveGallerySignatures()` y `isFileInActiveGallery()`.
+
+---
+
+## 📱 Contexto de la Plataforma y Entorno
+
+1. **Dispositivo del Usuario**: El usuario opera directamente desde un **teléfono móvil Android** (sin PC de escritorio). La app debe ser instalable directamente mediante archivo `.apk` o a través de **Uptodown / tiendas de terceros**.
+2. **Entorno de Compilación**: Google AI Studio Cloud Container con Kotlin 2.0+ y Jetpack Compose.
+3. **Restricciones de Sandbox en Android (API 29 a 34+)**:
+   - Para Android 10 (API 29) a Android 14+ (API 34+), el acceso a la papelera del sistema se realiza con `MediaStore.QUERY_ARG_MATCH_TRASHED = MediaStore.MATCH_ONLY`.
+   - La inserción de archivos recuperados debe usar `MediaStore.Images.Media.EXTERNAL_CONTENT_URI`, `MediaStore.Video.Media.EXTERNAL_CONTENT_URI` o `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` estableciendo `RELATIVE_PATH` en `Pictures/Restored_Photos`, `Movies/Restored_Videos` o `Music/Restored_Audio`, marcando `IS_PENDING = 0` al finalizar la copia de bytes.
+
+---
+
+## 🛠️ Tecnologías y Decisiones de Stack
+
+- **¿Por qué NO C++ / NDK?**: En Android sin root, el acceso a archivos de bajo nivel está restringido por SELinux. Las APIs de Kotlin/Java interactúan directamente con el framework del sistema operativo, el cual ya está implementado en C++ nativo.
+- **¿Por qué NO Rust?**: Añade overhead de compilación y mayor tamaño de APK sin ventajas de I/O en almacenamiento estándar.
+- **¿Por qué NO Python?**: Aumentaría el tamaño del APK en más de 20 MB y degradaría drásticamente el tiempo de inicio y el consumo de batería.
+- **Kotlin + Jetpack Compose**: Máxima fluidez a 60/120 Hz, peso mínimo del APK y compatibilidad nativa con Material Design 3.
+
+---
+
+## 🔍 Reglas de Implementación para Nuevas Funcionalidades
+
+1. **Escaneo Asíncrono**: Todo el trabajo de I/O de disco debe ejecutarse en `Dispatchers.IO`. Nunca bloquear el hilo principal (`Dispatchers.Main`).
+2. **Previsualización de Videos y Audios**: Mantener el límite de vista previa de 5 segundos con parada automática y liberación de `MediaPlayer` / `VideoView` para proteger la memoria RAM.
+3. **Medidor de Salud**: Cada archivo debe contar con su objeto `FileHealth` calculado al escanear, evaluando extensión, cabecera de bytes, resolución/duración y ubicación fuente.
+4. **Manejo de Permisos**:
+   - `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` y `READ_MEDIA_AUDIO` para Android 13+ (API 33+).
+   - `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE` para Android 10-12 (API 29-32).
+   - `MANAGE_EXTERNAL_STORAGE` (Settings Action) para acceso profundo en Android 11+.
+5. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
