@@ -5,7 +5,8 @@ import android.net.Uri
 enum class MediaType {
     IMAGE,
     VIDEO,
-    AUDIO
+    AUDIO,
+    DOCUMENT
 }
 
 enum class HealthLevel(val label: String, val colorHex: Long) {
@@ -34,6 +35,7 @@ enum class CategoryFilter(val title: String) {
     PHOTOS("Fotos"),
     VIDEOS("Videos"),
     AUDIOS("Audios"),
+    DOCUMENTS("Documentos"),
     TRASH("Papelera"),
     THUMBNAILS("Miniaturas"),
     HIDDEN("Ocultas"),
@@ -72,8 +74,11 @@ data class RecoverablePhoto(
     val isAudio: Boolean
         get() = mediaType == MediaType.AUDIO || fileExtension.lowercase() in listOf("mp3", "aac", "m4a", "opus", "ogg", "wav", "amr", "flac", "3ga")
 
+    val isDocument: Boolean
+        get() = mediaType == MediaType.DOCUMENT || fileExtension.lowercase() in listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "epub", "csv", "rtf")
+
     val isImage: Boolean
-        get() = !isVideo && !isAudio
+        get() = !isVideo && !isAudio && !isDocument
 
     val durationFormatted: String
         get() {
@@ -114,3 +119,24 @@ data class RestoreSummary(
     val destinationFolder: String = "Pictures/Restored_Photos",
     val restoredUris: List<Uri> = emptyList()
 )
+
+data class OrphanCleanResult(
+    val scannedCount: Int,
+    val deletedCount: Int,
+    val freedBytes: Long,
+    val failedCount: Int = 0,
+    val isDryRun: Boolean = false
+) {
+    val formattedFreedSize: String
+        get() {
+            if (freedBytes <= 0) return "0 KB"
+            val kb = freedBytes / 1024.0
+            val mb = kb / 1024.0
+            val gb = mb / 1024.0
+            return when {
+                gb >= 1.0 -> String.format("%.2f GB", gb)
+                mb >= 1.0 -> String.format("%.1f MB", mb)
+                else -> String.format("%.0f KB", kb)
+            }
+        }
+}

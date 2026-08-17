@@ -95,4 +95,39 @@ class ExampleRobolectricTest {
         assertEquals(85, audio.health.percentage)
         assertEquals(HealthLevel.GOOD, audio.health.level)
     }
+
+    @Test
+    fun `test document model and category validation`() {
+        val doc = RecoverablePhoto(
+            id = "doc_1",
+            name = "Project_Report.pdf",
+            filePath = "/sdcard/Documents/Project_Report.pdf",
+            fileSizeBytes = 2_400_000L,
+            lastModifiedTimestamp = System.currentTimeMillis(),
+            sourceCategory = RecoverySource.DEEP_STORAGE,
+            fileExtension = "pdf",
+            mediaType = MediaType.DOCUMENT,
+            dimensions = "Documento PDF (PDF)"
+        )
+        assertTrue(doc.isDocument)
+        assertFalse(doc.isImage)
+        assertFalse(doc.isVideo)
+        assertFalse(doc.isAudio)
+        assertEquals("Project_Report.pdf", doc.name)
+        assertEquals("Documento PDF (PDF)", doc.dimensions)
+    }
+
+    @Test
+    fun `test orphan clean result calculation`() {
+        val result = com.example.model.OrphanCleanResult(
+            scannedCount = 15,
+            deletedCount = 15,
+            freedBytes = 10_485_760L,
+            isDryRun = false
+        )
+        assertEquals(15, result.deletedCount)
+        assertEquals(10_485_760L, result.freedBytes)
+        assertEquals("10.0 MB", result.formattedFreedSize)
+        assertFalse(result.isDryRun)
+    }
 }

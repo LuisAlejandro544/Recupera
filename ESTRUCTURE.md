@@ -21,26 +21,28 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │   │   └── StoragePermissionManager.kt      # Verificación de permisos Scoped Storage y All Files Access (API 30+)
 │   │   │   │   ├── engine/                              # ⚙️ Motor modular de recuperación y escaneo
 │   │   │   │   │   ├── PhotoRecoveryEngine.kt           # Orquestador del ciclo de escaneo y restauración
+│   │   │   │   │   ├── cleaner/
+│   │   │   │   │   │   └── OrphanThumbnailCleaner.kt    # Purgado y auditoría de miniaturas huérfanas en .thumbnails
 │   │   │   │   │   ├── extractor/
-│   │   │   │   │   │   └── MediaMetadataExtractor.kt    # Extracción desacoplada de metadatos (dimensiones, duración, rotación)
+│   │   │   │   │   │   └── MediaMetadataExtractor.kt    # Extracción desacoplada de metadatos (dimensiones, duración, snippets de documentos)
 │   │   │   │   │   ├── filter/
-│   │   │   │   │   │   └── ActiveGalleryFilter.kt       # Exclusión estricta de fotos/videos/audios activos en galería
+│   │   │   │   │   │   └── ActiveGalleryFilter.kt       # Exclusión estricta de fotos/videos/audios/docs activos
 │   │   │   │   │   ├── health/
 │   │   │   │   │   │   └── FileHealthEvaluator.kt       # Diagnóstico de integridad binaria y cálculo de salud
 │   │   │   │   │   ├── scan/
 │   │   │   │   │   │   ├── StorageDirectoryScanner.kt   # Fachada coordinadora de escaneo en almacenamiento
 │   │   │   │   │   │   ├── ThumbnailCacheScanner.kt     # Escaneo de carpetas .thumbnails y cachés de miniaturas
-│   │   │   │   │   │   ├── MessagingAppScanner.kt       # Escaneo de WhatsApp (Audio, Video, Statuses), Telegram y Recordings
+│   │   │   │   │   │   ├── MessagingAppScanner.kt       # Escaneo de WhatsApp (Audio, Video, Docs, Statuses), Telegram y Recordings
 │   │   │   │   │   │   ├── DeepStorageScanner.kt        # Escaneo profundo de disco recursivo
 │   │   │   │   │   │   ├── TrashMediaScanner.kt         # Fachada de papelera del sistema MediaStore
 │   │   │   │   │   │   └── trash/
 │   │   │   │   │   │       └── MediaStoreTrashQueryHelper.kt # Ejecutor genérico de consultas MediaStore con MATCH_ONLY
 │   │   │   │   │   └── restore/
 │   │   │   │   │       ├── MediaRestorer.kt             # Escritura en MediaStore y sincronización con MediaScannerConnection
-│   │   │   │   │       ├── MimeTypeResolver.kt          # Resolución de tipos MIME y wildcards de escaneo
-│   │   │   │   │       └── MediaDestinationResolver.kt  # Resolución de rutas públicas de restauración y nombres limpios
+│   │   │   │   │       ├── MimeTypeResolver.kt          # Resolución de tipos MIME y wildcards de escaneo (fotos, videos, audios, docs)
+│   │   │   │   │       └── MediaDestinationResolver.kt  # Resolución de rutas públicas de restauración (Photos, Videos, Audio, Documents)
 │   │   │   │   ├── model/
-│   │   │   │   │   └── RecoverablePhoto.kt              # Entidades inmutables, FileHealth y Enums
+│   │   │   │   │   └── RecoverablePhoto.kt              # Entidades inmutables, FileHealth, OrphanCleanResult y Enums
 │   │   │   │   ├── viewmodel/
 │   │   │   │   │   └── PhotoRecoveryViewModel.kt        # Gestión reactiva de StateFlow y Corrutinas
 │   │   │   │   └── ui/
@@ -51,14 +53,17 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │       │   ├── PhotoCard.kt                 # Tarjeta de elemento multimedia con badge de salud y checkbox
 │   │   │   │       │   ├── RestoreSuccessDialog.kt      # Diálogo de confirmación de restauración
 │   │   │   │       │   ├── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
+│   │   │   │       │   ├── cleaner/                         # 🧹 Herramienta de limpieza de miniaturas
+│   │   │   │       │   │   └── OrphanCleanerDialog.kt       # Diálogo modal para auditar y purgar miniaturas huérfanas
 │   │   │   │       │   ├── preview/                         # 🎬 Módulos de visualización y reproductores
+│   │   │   │       │   │   ├── DocumentPreviewContent.kt    # Visor de metadatos y fragmentos de texto para documentos
 │   │   │   │       │   │   ├── AudioPreviewPlayer.kt        # Reproductor 5s con ecualizador animado y reinicio
 │   │   │   │       │   │   ├── VideoPreviewPlayer.kt        # Reproductor 5s con VideoView y control de loop
 │   │   │   │       │   │   ├── ImagePreviewContent.kt       # Visor de fotos zoomable con gestos multitáctiles
 │   │   │   │       │   │   ├── FileHealthMeterSection.kt    # Tarjeta de diagnóstico y barra de salud
 │   │   │   │       │   │   └── DetailRow.kt                 # Fila reutilizable para metadatos técnicos
 │   │   │   │       │   └── screen/                          # 📱 Componentes estructurales de pantalla
-│   │   │   │       │       ├── OverviewCard.kt              # Tarjeta superior de métricas y botones de escaneo
+│   │   │   │       │       ├── OverviewCard.kt              # Tarjeta superior de métricas, escaneo y botón de limpieza
 │   │   │   │       │       ├── BatchRestoreBar.kt           # Barra flotante inferior para restauración por lotes
 │   │   │   │       │       └── EmptyStateCard.kt            # Estado vacío para filtros o búsquedas sin resultados
 │   │   │   │       └── theme/
@@ -94,17 +99,18 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 
 ### 1. Capa del Motor (`engine/`)
 - **`PhotoRecoveryEngine`**: Orquesta el flujo de escaneo delegando a módulos especializados manteniéndose por debajo de 150 líneas.
-- **`MediaMetadataExtractor`**: Módulo desacoplado para extraer dimensiones, rotación y duraciones de fotos, videos y audios sin sobrecargar la memoria RAM.
-- **`ActiveGalleryFilter`**: Indexa firmas de archivos activos en la galería para **excluirlos estrictamente de los resultados recuperables**.
-- **`FileHealthEvaluator`**: Validador de cabeceras binarias (Magic Bytes para JPEG, PNG, MP4, MKV, MP3, OGG, FLAC, AMR, WAV) y motor heurístico de integridad (`EXCELLENT`, `GOOD`, `FAIR`, `DAMAGED`).
+- **`OrphanThumbnailCleaner`**: Módulo especializado en auditar y purgar miniaturas huérfanas en `.thumbnails` sin archivos activos en el dispositivo, liberando espacio en almacenamiento interno.
+- **`MediaMetadataExtractor`**: Módulo desacoplado para extraer dimensiones, rotación, duraciones y snippets de texto en documentos ofimáticos (PDF, DOCX, TXT, etc.) sin sobrecargar la memoria RAM.
+- **`ActiveGalleryFilter`**: Indexa firmas de archivos activos en el almacenamiento para **excluirlos estrictamente de los resultados recuperables**.
+- **`FileHealthEvaluator`**: Validador de cabeceras binarias (Magic Bytes para JPEG, PNG, MP4, MKV, MP3, OGG, FLAC, AMR, WAV, PDF, ZIP/Office, OLE, RTF) y motor heurístico de integridad (`EXCELLENT`, `GOOD`, `FAIR`, `DAMAGED`).
 - **`StorageDirectoryScanner`**: Fachada coordinadora que delega en los sub-escáneres:
   - `ThumbnailCacheScanner`: Rastreo en `.thumbnails` de DCIM, Pictures, Movies y cachés de aplicaciones.
-  - `MessagingAppScanner`: Rastreo en carpetas de WhatsApp (`WhatsApp Voice Notes`, `WhatsApp Audio`, `.Statuses`), Telegram y grabaciones.
+  - `MessagingAppScanner`: Rastreo en carpetas de WhatsApp (`WhatsApp Voice Notes`, `WhatsApp Audio`, `WhatsApp Documents`, `.Statuses`), Telegram y grabaciones.
   - `DeepStorageScanner`: Exploración profunda y recursiva de directorios respetando exclusiones de seguridad.
 - **`TrashMediaScanner` & `MediaStoreTrashQueryHelper`**: Consultas parametrizadas a `MediaStore` con `QUERY_ARG_MATCH_TRASHED` para recuperar imágenes, videos y audios de la papelera nativa de Android (API 30+).
 - **`MediaRestorer`**: Flujo de restauración modularizado apoyado en:
-  - `MimeTypeResolver`: Mapeo riguroso de tipos MIME e identificadores de indexación.
-  - `MediaDestinationResolver`: Resolución de carpetas públicas (`Pictures/Restored_Photos`, `Movies/Restored_Videos`, `Music/Restored_Audio`) y nombres de archivo limpios.
+  - `MimeTypeResolver`: Mapeo riguroso de tipos MIME e identificadores de indexación para fotos, videos, audios y documentos.
+  - `MediaDestinationResolver`: Resolución de carpetas públicas (`Pictures/Restored_Photos`, `Movies/Restored_Videos`, `Music/Restored_Audio`, `Documents/Restored_Documents`) y nombres de archivo limpios.
 
 ---
 
@@ -113,7 +119,9 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 
 ---
 
-### 3. Capa de Previsualización (`ui/components/preview/`)
+### 3. Capa de Previsualización y Herramientas (`ui/components/`)
+- **`OrphanCleanerDialog`**: Diálogo interactivo para auditar miniaturas huérfanas y liberar espacio en almacenamiento interno.
+- **`DocumentPreviewContent`**: Visor de metadatos técnicos, tipos de formato ofimático y fragmentos de texto para documentos recuperables.
 - **`AudioPreviewPlayer`**: Reproductor multimedia acotado a 5 segundos con ecualizador animado de 5 barras, control de pausa/reproducción, reinicio y contador en tiempo real.
 - **`VideoPreviewPlayer`**: Reproductor integrado con `VideoView` nativo, limitador de 5s, reinicio y barra de progreso.
 - **`ImagePreviewContent`**: Visor de imágenes de alta resolución con soporte para gestos multitáctiles (zoom de 1x a 4.5x y paneo).

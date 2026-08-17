@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
@@ -59,6 +60,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.model.RecoverablePhoto
 import com.example.ui.components.preview.AudioPreviewPlayer
 import com.example.ui.components.preview.DetailRow
+import com.example.ui.components.preview.DocumentPreviewContent
 import com.example.ui.components.preview.FileHealthMeterSection
 import com.example.ui.components.preview.ImagePreviewContent
 import com.example.ui.components.preview.VideoPreviewPlayer
@@ -112,6 +114,14 @@ fun FullscreenPhotoPreview(
                     photo.isAudio -> {
                         // 5-Second Audio Preview Player
                         AudioPreviewPlayer(
+                            photo = photo,
+                            mediaFile = mediaFile,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    photo.isDocument -> {
+                        // Document Preview Content
+                        DocumentPreviewContent(
                             photo = photo,
                             mediaFile = mediaFile,
                             modifier = Modifier.fillMaxSize()
@@ -231,6 +241,7 @@ fun FullscreenPhotoPreview(
                                 val typeTitle = when {
                                     photo.isVideo -> "Detalles del Video"
                                     photo.isAudio -> "Detalles del Audio"
+                                    photo.isDocument -> "Detalles del Documento"
                                     else -> "Detalles de la Foto"
                                 }
                                 Text(
@@ -249,6 +260,7 @@ fun FullscreenPhotoPreview(
                                 val mainIcon = when {
                                     photo.isVideo -> Icons.Default.Videocam
                                     photo.isAudio -> Icons.Default.Audiotrack
+                                    photo.isDocument -> Icons.Default.Description
                                     else -> Icons.Default.Image
                                 }
                                 DetailRow(
@@ -270,8 +282,8 @@ fun FullscreenPhotoPreview(
                                 }
                                 if (photo.dimensions != null) {
                                     DetailRow(
-                                        icon = Icons.Default.Image,
-                                        label = "Resolución",
+                                        icon = if (photo.isDocument) Icons.Default.Description else Icons.Default.Image,
+                                        label = if (photo.isDocument) "Tipo de Formato" else "Resolución",
                                         value = photo.dimensions
                                     )
                                 }
@@ -294,6 +306,7 @@ fun FullscreenPhotoPreview(
                         val mediaLabel = when {
                             photo.isVideo -> "Video"
                             photo.isAudio -> "Audio"
+                            photo.isDocument -> "Documento"
                             else -> "Foto"
                         }
                         Button(

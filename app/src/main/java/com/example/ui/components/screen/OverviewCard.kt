@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Button
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.DarkSurface
+import com.example.ui.theme.TealAccent
 
 @Composable
 fun OverviewCard(
@@ -39,6 +41,7 @@ fun OverviewCard(
     isScanning: Boolean,
     onQuickScan: () -> Unit,
     onDeepScan: () -> Unit,
+    onCleanOrphans: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val formattedTotalSize = if (totalSizeBytes >= 1024 * 1024) {
@@ -103,14 +106,14 @@ fun OverviewCard(
             // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
                     onClick = onQuickScan,
                     enabled = !isScanning,
                     modifier = Modifier
                         .weight(1f)
-                        .height(46.dp)
+                        .height(44.dp)
                         .testTag("quick_scan_button"),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -118,13 +121,13 @@ fun OverviewCard(
                         imageVector = Icons.Default.ImageSearch,
                         contentDescription = null,
                         tint = CyanPrimary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Escaneo Rápido",
+                        text = "Rápido",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -133,8 +136,8 @@ fun OverviewCard(
                     onClick = onDeepScan,
                     enabled = !isScanning,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
+                        .weight(1.1f)
+                        .height(44.dp)
                         .testTag("deep_scan_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
@@ -143,13 +146,40 @@ fun OverviewCard(
                         imageVector = Icons.Default.Restore,
                         contentDescription = null,
                         tint = Color.Black,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Escaneo Profundo",
+                        text = "Profundo",
                         color = Color.Black,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onCleanOrphans,
+                    enabled = !isScanning,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .testTag("clean_orphans_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFF1E293B).copy(alpha = 0.5f)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CleaningServices,
+                        contentDescription = null,
+                        tint = TealAccent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Limpiar",
+                        color = TealAccent,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }

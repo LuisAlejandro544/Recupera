@@ -1,29 +1,23 @@
-refactor(engine, permission): desarrollo modular de escáneres, restorer y permisos
+feat(engine, ui, cleaner): integracion de recuperacion de documentos de ofimatica y limpiador de miniaturas huerfanas
 
-- Modularización de StorageDirectoryScanner:
-  * extractor/MediaMetadataExtractor: desacopla la extracción de dimensiones, rotación y duración para imágenes, videos y audios.
-  * scan/ThumbnailCacheScanner: escaneo especializado en directorios .thumbnails públicos y de caché.
-  * scan/MessagingAppScanner: rastreo especializado en WhatsApp (.Statuses, Audio, Voice Notes), Telegram y grabaciones.
-  * scan/DeepStorageScanner: recorrido recursivo de almacenamiento profundo con exclusiones de sandbox seguras.
-  * scan/StorageDirectoryScanner: fachada coordinadora ligera (< 120 líneas).
+- Recuperacion de Documentos de Trabajo y Ofimatica:
+  * Soporte integral para formatos ofimaticos y de lectura: PDF, DOCX, DOC, XLSX, XLS, CSV, PPTX, PPT, TXT, EPUB, RTF.
+  * Modelo y Clasificacion: MediaType.DOCUMENT, propiedad reactiva isDocument y filtro CategoryFilter.DOCUMENTS.
+  * Extraccion de Metadatos y Snippets: MediaMetadataExtractor.extractDocumentMetadata para parseo de tipos y extraccion de fragmentos de texto en formatos legibles.
+  * Evaluacion de Salud con Magic Bytes: FileHealthEvaluator ampliado con firmas binarias de documentos (%PDF, PK.. para ZIP/Office, D0 CF 11 E0 para OLE legacy, {\rt para RTF).
+  * Rutas de Escaneo Especializadas: StorageDirectoryScanner y MessagingAppScanner rastrean carpetas de WhatsApp Documents, Telegram Documents, Download y Documents.
+  * Restauracion de Documentos: MediaDestinationResolver y MimeTypeResolver actualizados para restaurar en colecciones publicas (Documents/Restored_Documents) mediante MediaStore.
 
-- Modularización de TrashMediaScanner:
-  * scan/trash/MediaStoreTrashQueryHelper: ejecutor genérico de consultas MediaStore con QUERY_ARG_MATCH_TRASHED (MATCH_ONLY) para API 30+.
-  * scan/TrashMediaScanner: fachada simplificada reduciendo más de 200 líneas de código duplicado a llamadas limpias (< 60 líneas).
+- Herramienta de Limpieza de Miniaturas Huerfanas:
+  * OrphanThumbnailCleaner: motor desacoplado para auditar y purgar copias residuales en directorios .thumbnails sin fuente activa, liberando espacio en almacenamiento interno.
+  * OrphanCleanerDialog: dialogo interactivo con analisis de archivos residuales, calculo de espacio recuperable, proceso de purga y confirmacion visual.
+  * Boton de acceso rapido en OverviewCard y gestion de estado en PhotoRecoveryViewModel.
 
-- Modularización de MediaRestorer:
-  * restore/MimeTypeResolver: resolución centralizada de MIME types y wildcards de MediaScanner para fotos, videos y audios.
-  * restore/MediaDestinationResolver: resolución de rutas de almacenamiento público (Restored_Photos, Restored_Videos, Restored_Audio) y generación de nombres únicos.
-  * restore/MediaRestorer: orquestador de I/O y actualización MediaStore limpio y enfocado (< 110 líneas).
+- Interfaz de Usuario y Previsualizacion:
+  * DocumentPreviewContent: visor con selector de iconos vectoriales por tipo de formato, metadatos y tarjeta de previsualizacion de contenido.
+  * Integracion en FullscreenPhotoPreview y tarjetas PhotoCard con badges visuales distintivos (DOC, PDF, XLSX, PPTX).
+  * CategoryFilterChips y OverviewCard actualizados con el nuevo filtro y contador de documentos.
 
-- Modularización de Permisos y MainActivity:
-  * permission/StoragePermissionManager: gestor de permisos adaptativo según API (Android 10 a 14+) y soporte de MANAGE_EXTERNAL_STORAGE.
-  * MainActivity: inicialización limpia delegando en StoragePermissionManager.
-
-- Documentación y Políticas sincronizadas:
-  * ESTRUCTURE.md actualizado con la nueva arquitectura modular y flujos CI/CD.
-  * CONTRIBUTING.md creado estableciendo la política de contribuciones.
-  * README.md actualizado con guía de Secrets y uso del Action de Telegram.
-
-- CI/CD y Automatización:
-  * .github/workflows/build_apk_debug.yml: compilación de APK Debug bajo demanda (manual workflow_dispatch) con caché inteligente de Gradle y pip, firma automática y entrega remota (hasta 2GB).
+- Tests y Documentacion:
+  * ExampleRobolectricTest actualizado con pruebas unitarias para MediaType.DOCUMENT y OrphanCleanResult.
+  * Sincronizacion de documentacion en README.md, ROADMAP.md, ESTRUCTURE.md y AI_CONTEXT.md.

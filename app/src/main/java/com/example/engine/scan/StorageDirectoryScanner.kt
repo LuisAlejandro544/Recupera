@@ -91,10 +91,12 @@ object StorageDirectoryScanner {
 
         val isVideo = ext in FileHealthEvaluator.supportedVideoExtensions
         val isAudio = ext in FileHealthEvaluator.supportedAudioExtensions
+        val isDocument = ext in FileHealthEvaluator.supportedDocumentExtensions
 
         val metadata = when {
             isVideo -> MediaMetadataExtractor.extractVideoMetadata(file)
             isAudio -> MediaMetadataExtractor.extractAudioMetadata(file)
+            isDocument -> MediaMetadataExtractor.extractDocumentMetadata(file)
             else -> MediaMetadataExtractor.extractImageDimensions(file)
         }
 
@@ -102,6 +104,7 @@ object StorageDirectoryScanner {
             file = file,
             isVideo = isVideo,
             isAudio = isAudio,
+            isDocument = isDocument,
             durationMs = metadata.durationMs,
             width = metadata.width,
             height = metadata.height,
@@ -111,6 +114,7 @@ object StorageDirectoryScanner {
         val mediaType = when {
             isVideo -> MediaType.VIDEO
             isAudio -> MediaType.AUDIO
+            isDocument -> MediaType.DOCUMENT
             else -> MediaType.IMAGE
         }
 

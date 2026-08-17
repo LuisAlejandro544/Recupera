@@ -7,8 +7,8 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
 ## 🎯 Regla Fundamental de Negocio
 
 > **CRÍTICO: NO MOSTRAR ARCHIVOS ACTIVOS DE LA GALERÍA NI REPRODUCTORES**
-> La aplicación está diseñada para recuperar **fotos, videos y pistas de audio eliminadas, perdidas, residuales o en papelera**.
-> Bajo ninguna circunstancia se deben mostrar fotos, videos o canciones que el usuario ya tenga guardados y visibles en su galería normal o biblioteca activa.
+> La aplicación está diseñada para recuperar **fotos, videos, notas de voz, pistas de audio y documentos de trabajo eliminados, perdidos, residuales o en papelera**.
+> Bajo ninguna circunstancia se deben mostrar fotos, videos, canciones o documentos que el usuario ya tenga guardados y visibles en su galería normal o almacenamiento activo.
 > Cualquier nuevo método de escaneo DEBE verificar y respetar `loadActiveGallerySignatures()` y `isFileInActiveGallery()`.
 
 ---
@@ -19,7 +19,7 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
 2. **Entorno de Compilación**: Google AI Studio Cloud Container con Kotlin 2.0+ y Jetpack Compose.
 3. **Restricciones de Sandbox en Android (API 29 a 34+)**:
    - Para Android 10 (API 29) a Android 14+ (API 34+), el acceso a la papelera del sistema se realiza con `MediaStore.QUERY_ARG_MATCH_TRASHED = MediaStore.MATCH_ONLY`.
-   - La inserción de archivos recuperados debe usar `MediaStore.Images.Media.EXTERNAL_CONTENT_URI`, `MediaStore.Video.Media.EXTERNAL_CONTENT_URI` o `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` estableciendo `RELATIVE_PATH` en `Pictures/Restored_Photos`, `Movies/Restored_Videos` o `Music/Restored_Audio`, marcando `IS_PENDING = 0` al finalizar la copia de bytes.
+   - La inserción de archivos recuperados debe usar `MediaStore.Images.Media.EXTERNAL_CONTENT_URI`, `MediaStore.Video.Media.EXTERNAL_CONTENT_URI`, `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` o `MediaStore.Files.getContentUri("external")` estableciendo `RELATIVE_PATH` en `Pictures/Restored_Photos`, `Movies/Restored_Videos`, `Music/Restored_Audio` o `Documents/Restored_Documents`, marcando `IS_PENDING = 0` al finalizar la copia de bytes.
 
 ---
 
@@ -35,13 +35,14 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
 ## 🔍 Reglas de Implementación para Nuevas Funcionalidades
 
 1. **Escaneo Asíncrono**: Todo el trabajo de I/O de disco debe ejecutarse en `Dispatchers.IO`. Nunca bloquear el hilo principal (`Dispatchers.Main`).
-2. **Previsualización de Videos y Audios**: Mantener el límite de vista previa de 5 segundos con parada automática y liberación de `MediaPlayer` / `VideoView` para proteger la memoria RAM.
-3. **Medidor de Salud**: Cada archivo debe contar con su objeto `FileHealth` calculado al escanear, evaluando extensión, cabecera de bytes, resolución/duración y ubicación fuente.
-4. **Manejo de Permisos**:
+2. **Previsualización Multimedia**: Mantener el límite de vista previa de 5 segundos con parada automática y liberación de `MediaPlayer` / `VideoView` para proteger la memoria RAM. Para documentos, mostrar metadatos ofimáticos y fragmentos de texto limpios.
+3. **Limpieza de Miniaturas Huérfanas**: El purgador de miniaturas en `.thumbnails` solo debe eliminar archivos si su contraparte original no existe en la galería activa (`isFileInActiveGallery`).
+4. **Medidor de Salud**: Cada archivo debe contar con su objeto `FileHealth` calculado al escanear, evaluando extensión, cabecera de bytes (Magic Bytes), resolución/duración y ubicación fuente.
+5. **Manejo de Permisos**:
    - `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` y `READ_MEDIA_AUDIO` para Android 13+ (API 33+).
    - `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE` para Android 10-12 (API 29-32).
    - `MANAGE_EXTERNAL_STORAGE` (Settings Action) para acceso profundo en Android 11+.
-5. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
-6. **Automatización y Despliegue CI/CD**:
+6. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
+7. **Automatización y Despliegue CI/CD**:
    - `build_apk_debug.yml`: Compila el APK Debug con firma autogenerada en el runner y entrega directa remota (hasta 2GB).
    - `sync_zip.yml`: Sincronización continua y unificación de commits desde archivos comprimidos.

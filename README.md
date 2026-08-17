@@ -1,4 +1,4 @@
-# Recuperador Pro - Recuperación de Fotos, Videos y Audios Eliminados 📱⚡
+# Recuperador Pro - Recuperación de Fotos, Videos, Audios y Documentos 📱⚡
 
 [![Android](https://img.shields.io/badge/Android-10%2B%20(API%2029%2B)-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
@@ -6,21 +6,23 @@
 [![GitHub Action](https://img.shields.io/badge/CI%2FCD-Sync%20from%20Zip-2088FF?logo=githubactions&logoColor=white)](#-sincronización-de-código-desde-archivos-zip-github-action)
 [![Licence](https://img.shields.io/badge/Privacidad-100%25%20Local-success)](#privacidad-y-seguridad)
 
-Aplicación nativa para Android diseñada para **escanear, previsualizar y restaurar fotos, videos y archivos de audio eliminados** o residuales directamente en el almacenamiento de tu teléfono, sin necesidad de conexión a internet, sin servidores externos y sin requerir acceso root.
+Aplicación nativa para Android diseñada para **escanear, previsualizar y restaurar fotos, videos, notas de voz, pistas de audio y documentos de trabajo eliminados** o residuales directamente en el almacenamiento de tu teléfono, sin necesidad de conexión a internet, sin servidores externos y sin requerir acceso root. Además, incluye una **herramienta de limpieza de miniaturas huérfanas** para liberar almacenamiento residual en disco.
 
 ---
 
 ## 🌟 Características Principales
 
-- 🔍 **Filtro Inteligente de Galería Activa**: Excluye automáticamente fotos, videos y canciones que ya se encuentran guardados y visibles en tu galería o reproductor, mostrando **únicamente archivos eliminados, en papelera o residuales**.
-- 🩺 **Medidor de Salud del Archivo (File Health Meter)**: Diagnóstico en tiempo real del estado y porcentaje de integridad del archivo recuperable (100% Íntegro en papelera, 85-98% en caché de apps, 40-70% en fragmentos o miniaturas).
+- 🔍 **Filtro Inteligente de Galería Activa**: Excluye automáticamente fotos, videos, audios y documentos que ya se encuentran guardados y visibles en tu almacenamiento normal, mostrando **únicamente archivos eliminados, en papelera o residuales**.
+- 📑 **Recuperación de Documentos de Trabajo y Ofimática**: Escanea y recupera archivos `PDF`, Word (`DOCX`, `DOC`), Excel (`XLSX`, `XLS`, `CSV`), PowerPoint (`PPTX`, `PPT`), texto plano (`TXT`, `RTF`) y libros digitales (`EPUB`) con visor de metadatos y fragmentos de texto.
+- 🧹 **Limpieza de Miniaturas Huérfanas (Orphan Thumbnail Cleaner)**: Detecta y purga de forma segura las miniaturas residuales en directorios `.thumbnails` cuyos archivos originales ya no existen, liberando valiosos megabytes de almacenamiento.
+- 🩺 **Medidor de Salud del Archivo (File Health Meter)**: Diagnóstico en tiempo real del estado y porcentaje de integridad del archivo recuperable (100% Íntegro en papelera, 85-98% en carpetas de apps, 40-70% en fragmentos o miniaturas).
 - 🎵 **Recuperación y Preview de Audios (5 Segundos)**: Escucha una vista previa de 5 segundos de audios y notas de voz eliminadas (`MP3`, `AAC`, `M4A`, `OGG`, `OPUS`, `WAV`, `AMR`, `FLAC`) con ecualizador animado.
 - 🎬 **Reproductor de Vista Previa de Videos (5 Segundos)**: Previsualiza los primeros 5 segundos de cualquier video recuperable (`MP4`, `MKV`, `MOV`, `3GP`, `WEBM`, `AVI`) con barra de progreso interactiva antes de restaurarlo.
 - 🖼️ **Visor de Fotos Interactivo**: Zoom táctil de hasta 4.5x, metadatos detallados (resolución, tamaño, fecha) y diseño inmersivo.
 - 🗑️ **Escaneo de Papelera del Sistema (MediaStore Trash)**: Acceso directo a la papelera nativa de Android (API 30+) para fotos, videos y audios borrados recientemente.
 - 🗂️ **Rastreo de Miniaturas y Caché Residual**: Localiza fragmentos y miniaturas en `.thumbnails`, carpetas de caché de apps y directorios `.nomedia`.
-- 🕵️ **Recuperación de Carpetas de Mensajería**: Detecta notas de voz de WhatsApp (`WhatsApp Voice Notes` / `WhatsApp Audio`), estados de WhatsApp (`.Statuses`), carpetas de Telegram y bóvedas ocultas.
-- ⚡ **Restauración en 1-Toque**: Restaura archivos de forma individual o por lotes (Batch Restore) a las carpetas públicas `Pictures/Restored_Photos`, `Movies/Restored_Videos` y `Music/Restored_Audio`.
+- 🕵️ **Recuperación de Mensajería y Descargas**: Detecta notas de voz y documentos de WhatsApp (`WhatsApp Voice Notes`, `WhatsApp Documents`), Telegram (`Telegram Documents`, `Telegram Audio`), carpeta `Download` y bóvedas ocultas.
+- ⚡ **Restauración en 1-Toque**: Restaura archivos de forma individual o por lotes (Batch Restore) a las carpetas públicas `Pictures/Restored_Photos`, `Movies/Restored_Videos`, `Music/Restored_Audio` y `Documents/Restored_Documents`.
 - 🔒 **100% Privado y Seguro**: Todo el procesamiento se realiza en el hardware del teléfono. Cero telemetría, cero subida a la nube.
 
 ---

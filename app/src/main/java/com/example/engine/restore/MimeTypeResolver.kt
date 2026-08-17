@@ -32,6 +32,22 @@ object MimeTypeResolver {
                     else -> "audio/mpeg"
                 }
             }
+            photo.isDocument -> {
+                when (ext) {
+                    "pdf" -> "application/pdf"
+                    "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    "doc" -> "application/msword"
+                    "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    "xls" -> "application/vnd.ms-excel"
+                    "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    "ppt" -> "application/vnd.ms-powerpoint"
+                    "txt", "log" -> "text/plain"
+                    "csv" -> "text/csv"
+                    "rtf" -> "application/rtf"
+                    "epub" -> "application/epub+zip"
+                    else -> "application/octet-stream"
+                }
+            }
             else -> {
                 when (ext) {
                     "png" -> "image/png"
@@ -51,6 +67,7 @@ object MimeTypeResolver {
         return when {
             photo.isVideo -> "video/*"
             photo.isAudio -> "audio/*"
+            photo.isDocument -> "application/*"
             else -> "image/*"
         }
     }

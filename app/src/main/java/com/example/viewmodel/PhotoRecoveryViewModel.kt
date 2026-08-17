@@ -8,7 +8,9 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.engine.PhotoRecoveryEngine
+import com.example.engine.cleaner.OrphanThumbnailCleaner
 import com.example.model.CategoryFilter
+import com.example.model.OrphanCleanResult
 import com.example.model.RecoverablePhoto
 import com.example.model.RecoverySource
 import com.example.model.RestoreSummary
@@ -57,6 +59,19 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
     private val _hasScanned = MutableStateFlow(false)
     val hasScanned: StateFlow<Boolean> = _hasScanned.asStateFlow()
 
+    // Orphan thumbnail cleaner state
+    private val _showOrphanCleanerDialog = MutableStateFlow(false)
+    val showOrphanCleanerDialog: StateFlow<Boolean> = _showOrphanCleanerDialog.asStateFlow()
+
+    private val _isScanningOrphans = MutableStateFlow(false)
+    val isScanningOrphans: StateFlow<Boolean> = _isScanningOrphans.asStateFlow()
+
+    private val _isCleaningOrphans = MutableStateFlow(false)
+    val isCleaningOrphans: StateFlow<Boolean> = _isCleaningOrphans.asStateFlow()
+
+    private val _orphanCleanResult = MutableStateFlow<OrphanCleanResult?>(null)
+    val orphanCleanResult: StateFlow<OrphanCleanResult?> = _orphanCleanResult.asStateFlow()
+
     // Derived filtered and sorted photos stream
     val displayedPhotos: StateFlow<List<RecoverablePhoto>> = combine(
         _rawPhotos,
@@ -74,6 +89,7 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
                     CategoryFilter.PHOTOS -> photo.isImage
                     CategoryFilter.VIDEOS -> photo.isVideo
                     CategoryFilter.AUDIOS -> photo.isAudio
+                    CategoryFilter.DOCUMENTS -> photo.isDocument
                     CategoryFilter.TRASH -> photo.sourceCategory == RecoverySource.TRASH_MEDIASTORE
                     CategoryFilter.THUMBNAILS -> photo.sourceCategory == RecoverySource.THUMBNAILS_CACHE
                     CategoryFilter.HIDDEN -> photo.sourceCategory == RecoverySource.HIDDEN_VAULT
@@ -263,9 +279,34 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
         } catch (e: Exception) {
             Toast.makeText(
                 getApplication(),
-                "Fotos guardadas en Galería -> Carpeta Restored_Photos",
+                "Archivos guardados en el almacenamiento del dispositivo",
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    fun openOrphanCleaner() {
+        _showOrphanCleanerDialog.value = true
+        _isScanningOrphans.value = true
+        viewModelScope.launch {
+            val result = OrphanThumbnailCleaner.analyzeOrphanThumbnails(getApplication())
+            _orphanCleanResult.value = result
+            _isScanningOrphans.value = false
+        }
+    }
+
+    fun executeOrphanClean() {
+        if (_isCleaningOrphans.value) return
+        _isCleaningOrphans.value = true
+        viewModelScope.launch {
+            val result = OrphanThumbnailCleaner.purgeOrphanThumbnails(getApplication())
+            _orphanCleanResult.value = result
+            _isCleaningOrphans.value = false
+        }
+    }
+
+    fun closeOrphanCleaner() {
+        _showOrphanCleanerDialog.value = false
+        _orphanCleanResult.value = null
     }
 }

@@ -49,6 +49,7 @@ import com.example.ui.components.FullscreenPhotoPreview
 import com.example.ui.components.PhotoCard
 import com.example.ui.components.RestoreSuccessDialog
 import com.example.ui.components.ScanProgressBanner
+import com.example.ui.components.cleaner.OrphanCleanerDialog
 import com.example.ui.components.screen.BatchRestoreBar
 import com.example.ui.components.screen.EmptyStateCard
 import com.example.ui.components.screen.OverviewCard
@@ -73,6 +74,11 @@ fun PhotoRecoveryScreen(
     val isRestoring by viewModel.isRestoring.collectAsState()
     val restoreSummary by viewModel.restoreSummary.collectAsState()
 
+    val showOrphanCleaner by viewModel.showOrphanCleanerDialog.collectAsState()
+    val isScanningOrphans by viewModel.isScanningOrphans.collectAsState()
+    val isCleaningOrphans by viewModel.isCleaningOrphans.collectAsState()
+    val orphanCleanResult by viewModel.orphanCleanResult.collectAsState()
+
     // Calculate category counts
     val categoryCounts = remember(rawPhotos) {
         mapOf<CategoryFilter, Int>(
@@ -80,6 +86,7 @@ fun PhotoRecoveryScreen(
             CategoryFilter.PHOTOS to rawPhotos.count { it.isImage },
             CategoryFilter.VIDEOS to rawPhotos.count { it.isVideo },
             CategoryFilter.AUDIOS to rawPhotos.count { it.isAudio },
+            CategoryFilter.DOCUMENTS to rawPhotos.count { it.isDocument },
             CategoryFilter.TRASH to rawPhotos.count { it.sourceCategory == RecoverySource.TRASH_MEDIASTORE },
             CategoryFilter.THUMBNAILS to rawPhotos.count { it.sourceCategory == RecoverySource.THUMBNAILS_CACHE },
             CategoryFilter.HIDDEN to rawPhotos.count { it.sourceCategory == RecoverySource.HIDDEN_VAULT },
@@ -119,7 +126,7 @@ fun PhotoRecoveryScreen(
                                 )
                             )
                             Text(
-                                text = "Recupera fotos, videos y audios eliminados",
+                                text = "Fotos, videos, audios y documentos eliminados",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp
@@ -195,7 +202,8 @@ fun PhotoRecoveryScreen(
                             totalSizeBytes = rawPhotos.sumOf { it.fileSizeBytes },
                             isScanning = scanProgress.isScanning,
                             onQuickScan = { viewModel.startScan(deepScan = false) },
-                            onDeepScan = { viewModel.startScan(deepScan = true) }
+                            onDeepScan = { viewModel.startScan(deepScan = true) },
+                            onCleanOrphans = { viewModel.openOrphanCleaner() }
                         )
 
                         // Scan Progress Live Banner
@@ -269,6 +277,17 @@ fun PhotoRecoveryScreen(
                         viewModel.dismissRestoreSummary()
                         viewModel.openSystemGallery()
                     }
+                )
+            }
+
+            // Orphan Thumbnail Cleaner Dialog
+            if (showOrphanCleaner) {
+                OrphanCleanerDialog(
+                    isScanningOrphans = isScanningOrphans,
+                    isCleaningOrphans = isCleaningOrphans,
+                    cleanResult = orphanCleanResult,
+                    onCleanOrphans = { viewModel.executeOrphanClean() },
+                    onDismiss = { viewModel.closeOrphanCleaner() }
                 )
             }
         }

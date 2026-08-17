@@ -11,11 +11,12 @@ object FileHealthEvaluator {
     val supportedImageExtensions = setOf("jpg", "jpeg", "png", "webp", "heic", "gif")
     val supportedVideoExtensions = setOf("mp4", "mkv", "mov", "3gp", "webm", "avi", "flv")
     val supportedAudioExtensions = setOf("mp3", "aac", "m4a", "opus", "ogg", "wav", "amr", "flac", "3ga", "wma")
-    val supportedExtensions = supportedImageExtensions + supportedVideoExtensions + supportedAudioExtensions
+    val supportedDocumentExtensions = setOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "epub", "csv", "rtf")
+    val supportedExtensions = supportedImageExtensions + supportedVideoExtensions + supportedAudioExtensions + supportedDocumentExtensions
 
     fun isValidMediaFile(file: File): Boolean {
         val ext = file.extension.lowercase(Locale.ROOT)
-        if (ext in supportedExtensions && file.length() > 1024) {
+        if (ext in supportedExtensions && file.length() > 64) {
             return true
         }
         // Check files without extension between 5KB and 50MB
@@ -37,6 +38,14 @@ object FileHealthEvaluator {
                     val isPng = (bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() && bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte())
                     // GIF: 47 49 46 38
                     val isGif = (bytes[0] == 0x47.toByte() && bytes[1] == 0x49.toByte() && bytes[2] == 0x46.toByte())
+                    // PDF: 25 50 44 46 ("%PDF")
+                    val isPdf = (bytes[0] == 0x25.toByte() && bytes[1] == 0x50.toByte() && bytes[2] == 0x44.toByte() && bytes[3] == 0x46.toByte())
+                    // ZIP / DOCX / XLSX / PPTX / EPUB: 50 4B 03 04 ("PK..")
+                    val isZipOffice = (bytes[0] == 0x50.toByte() && bytes[1] == 0x4B.toByte() && (bytes[2] == 0x03.toByte() || bytes[2] == 0x05.toByte()))
+                    // OLE / DOC / XLS / PPT: D0 CF 11 E0
+                    val isOleOffice = (bytes[0] == 0xD0.toByte() && bytes[1] == 0xCF.toByte() && bytes[2] == 0x11.toByte() && bytes[3] == 0xE0.toByte())
+                    // RTF: 7B 5C 72 74 ("{\rt")
+                    val isRtf = (bytes[0] == 0x7B.toByte() && bytes[1] == 0x5C.toByte() && bytes[2] == 0x72.toByte() && bytes[3] == 0x74.toByte())
                     // MP3 ID3: 49 44 33 ("ID3") or sync byte 0xFF 0xFB / 0xFF 0xF3
                     val isMp3 = (bytes[0] == 0x49.toByte() && bytes[1] == 0x44.toByte() && bytes[2] == 0x33.toByte()) ||
                             (bytes[0] == 0xFF.toByte() && (bytes[1].toInt() and 0xE0) == 0xE0)
@@ -60,7 +69,7 @@ object FileHealthEvaluator {
                         isRiffHeader && (type == "AVI " || type == "WAVE")
                     } else false
 
-                    isJpeg || isPng || isGif || isMp3 || isOgg || isFlac || isAmr || isMp4OrM4a || isMkv || isRiff
+                    isJpeg || isPng || isGif || isPdf || isZipOffice || isOleOffice || isRtf || isMp3 || isOgg || isFlac || isAmr || isMp4OrM4a || isMkv || isRiff
                 } else false
             }
         } catch (_: Exception) {
@@ -72,6 +81,7 @@ object FileHealthEvaluator {
         file: File,
         isVideo: Boolean,
         isAudio: Boolean,
+        isDocument: Boolean = false,
         durationMs: Long,
         width: Int,
         height: Int,
@@ -83,6 +93,17 @@ object FileHealthEvaluator {
         }
         if (source == RecoverySource.TRASH_MEDIASTORE) {
             return FileHealth(100, HealthLevel.EXCELLENT, "Archivo original en papelera (100% íntegro)")
+        }
+
+        if (isDocument) {
+            val ext = file.extension.lowercase(Locale.ROOT)
+            return if (length > 2048) {
+                FileHealth(100, HealthLevel.EXCELLENT, "Documento $ext intacto con estructura completa")
+            } else if (length > 128) {
+                FileHealth(85, HealthLevel.GOOD, "Documento recuperable ($ext)")
+            } else {
+                FileHealth(60, HealthLevel.FAIR, "Documento de texto breve o parcial")
+            }
         }
 
         if (isAudio) {

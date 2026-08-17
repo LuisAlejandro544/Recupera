@@ -9,10 +9,40 @@ data class ExtractedMediaMetadata(
     val width: Int = 0,
     val height: Int = 0,
     val durationMs: Long = 0L,
-    val dimensions: String? = null
+    val dimensions: String? = null,
+    val textSnippet: String? = null
 )
 
 object MediaMetadataExtractor {
+
+    /**
+     * Extracts document information or short preview snippets for text-based docs.
+     */
+    fun extractDocumentMetadata(file: File): ExtractedMediaMetadata {
+        return try {
+            val ext = file.extension.lowercase()
+            val textSnippet = if (ext in listOf("txt", "csv", "json", "xml", "log", "rtf") && file.length() < 1_000_000) {
+                file.bufferedReader().useLines { lines ->
+                    lines.take(8).joinToString("\n")
+                }
+            } else null
+
+            val dimStr = when (ext) {
+                "pdf" -> "Documento PDF"
+                "docx", "doc" -> "Documento Word"
+                "xlsx", "xls", "csv" -> "Hoja de Cálculo"
+                "pptx", "ppt" -> "Presentación"
+                "txt" -> "Texto Plano"
+                "epub" -> "Libro Digital"
+                else -> "Documento ${ext.uppercase()}"
+            }
+
+            ExtractedMediaMetadata(dimensions = dimStr, textSnippet = textSnippet)
+        } catch (e: Exception) {
+            Log.w("MediaMetadataExtractor", "Could not extract document metadata from ${file.name}: ${e.message}")
+            ExtractedMediaMetadata()
+        }
+    }
 
     /**
      * Extracts visual and temporal metadata from a video file.

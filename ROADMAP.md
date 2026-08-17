@@ -50,19 +50,26 @@ Plan de evolución estratégica y técnica para el desarrollo de **Recuperador P
 
 ---
 
-## 📌 Fase 5: Optimización de Almacenamiento y Documentos (Próxima Versión 🚀)
+## 📌 Fase 5: Documentos de Ofimática y Limpieza de Almacenamiento (Completada ✅)
 
-- [ ] **Recuperación de Documentos y Archivos de Oficina**:
-  - Formatos: `PDF`, `DOCX`, `XLSX`, `PPTX`, `TXT`.
-- [ ] **Recuperación de Paquetes de Instalación (APKs)**:
-  - Búsqueda de archivos `.apk` antiguos en cachés de descarga y almacenamiento interno.
-- [ ] **Detector de Archivos Duplicados**: Análisis hash (MD5/SHA-256) para identificar y eliminar duplicados.
-- [ ] **Limpieza de Miniaturas Obsoletas**: Herramienta para liberar espacio en disco eliminando miniaturas rotas o sin archivo fuente.
+- [x] **Recuperación de Documentos de Trabajo y Ofimática**:
+  - Formatos soportados: `PDF`, `DOCX`, `DOC`, `XLSX`, `XLS`, `CSV`, `PPTX`, `PPT`, `TXT`, `EPUB`, `RTF`.
+  - Extracción de metadatos ofimáticos y previsualización de fragmentos de texto (`DocumentPreviewContent`).
+  - Mapeo de tipos MIME y restauración automática en `Documents/Restored_Documents`.
+  - Escaneo en carpetas de WhatsApp Documents, Telegram Documents, Download y Documents.
+  - Clasificación de salud binaria con firmas mágicas (`%PDF`, `PK..`, `D0 CF 11 E0`, `{\rt`).
+- [x] **Herramienta de Limpieza de Miniaturas Huérfanas**:
+  - `OrphanThumbnailCleaner`: Auditoría y purga de miniaturas residuales en `.thumbnails` sin archivo activo en galería.
+  - `OrphanCleanerDialog`: Diálogo interactivo con desglose de archivos residuales y espacio liberable.
+  - Acceso directo desde la tarjeta de resumen superior (`OverviewCard`).
 
 ---
 
-## 📌 Fase 6: Distribución y Globalización (Uptodown / Direct APK 🌐)
+## 📌 Fase 6: Optimización Avanzada y Distribución (Uptodown / Direct APK 🚀)
 
+- [ ] **Recuperación de Paquetes de Instalación (APKs)**:
+  - Búsqueda de archivos `.apk` antiguos en cachés de descarga y almacenamiento interno.
+- [ ] **Detector de Archivos Duplicados**: Análisis hash (MD5/SHA-256) para identificar y eliminar duplicados.
 - [ ] **Soporte Multilenguaje Completo**: Español, Inglés, Portugués, Francés.
 - [ ] **Optimizaciones R8/ProGuard**: Reducción del tamaño final del APK a menos de 8 MB.
 - [ ] **Ficha para Uptodown**: Metadatos, capturas de pantalla de alta resolución y changelog optimizado.

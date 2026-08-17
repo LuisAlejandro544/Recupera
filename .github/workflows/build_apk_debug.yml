@@ -16,19 +16,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Licenses & Install Android SDK Platforms
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" || true
+
       - name: Setup Gradle & Cache
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.13'
+          gradle-version: '9.3.1'
           cache-read-only: false
           gradle-home-cache-cleanup: true
 
@@ -57,13 +62,13 @@ jobs:
       - name: Ensure Gradle Wrapper is Executable
         run: |
           if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 8.13
+            gradle wrapper --gradle-version 9.3.1
           fi
           chmod +x gradlew
 
       - name: Build Debug APK
         run: |
-          ./gradlew :app:assembleDebug --build-cache --stacktrace --info
+          ./gradlew :app:assembleDebug --build-cache --stacktrace
 
       - name: Locate Built APK
         id: find-apk

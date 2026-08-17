@@ -14,6 +14,7 @@ object MediaDestinationResolver {
         return when {
             photo.isVideo -> "${Environment.DIRECTORY_MOVIES}/Restored_Videos"
             photo.isAudio -> "${Environment.DIRECTORY_MUSIC}/Restored_Audio"
+            photo.isDocument -> "${Environment.DIRECTORY_DOCUMENTS}/Restored_Documents"
             else -> "${Environment.DIRECTORY_PICTURES}/Restored_Photos"
         }
     }
@@ -25,6 +26,7 @@ object MediaDestinationResolver {
         return when {
             photo.isVideo -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
             photo.isAudio -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            photo.isDocument -> MediaStore.Files.getContentUri("external")
             else -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         }
     }
@@ -37,6 +39,7 @@ object MediaDestinationResolver {
         val defaultExt = when {
             photo.isVideo -> "mp4"
             photo.isAudio -> "mp3"
+            photo.isDocument -> photo.fileExtension.ifBlank { "pdf" }
             else -> "jpg"
         }
         val cleanName = if (!originalName.contains(".")) "$originalName.$defaultExt" else originalName

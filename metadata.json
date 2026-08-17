@@ -1,6 +1,6 @@
 {
   "name": "Recuperar Fotos",
-  "description": "Herramienta avanzada para escanear y recuperar fotos, videos y audios eliminados con previsualización de 5 segundos, medidor de salud del archivo y restauración directa al teléfono.",
+  "description": "Herramienta honesta y avanzada para escanear y recuperar fotos, videos, audios y documentos de trabajo eliminados (PDF, Office, TXT, EPUB), con diagnóstico de salud de archivo y limpiador de miniaturas huérfanas.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

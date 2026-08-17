@@ -20,8 +20,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Summarize
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -50,6 +55,7 @@ import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.DarkSurfaceVariant
 import com.example.ui.theme.TealAccent
 import java.io.File
+import java.util.Locale
 
 @Composable
 fun PhotoCard(
@@ -83,7 +89,63 @@ fun PhotoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (photo.isAudio) {
+            if (photo.isDocument) {
+                // Document decorative card background
+                val docExt = photo.fileExtension.lowercase(Locale.ROOT)
+                val (docBgColor, docIcon) = when (docExt) {
+                    "pdf" -> Pair(Color(0xFFEF4444), Icons.Default.PictureAsPdf)
+                    "docx", "doc" -> Pair(Color(0xFF3B82F6), Icons.Default.Description)
+                    "xlsx", "xls", "csv" -> Pair(Color(0xFF10B981), Icons.Default.TableChart)
+                    "pptx", "ppt" -> Pair(Color(0xFFF59E0B), Icons.Default.Summarize)
+                    "epub" -> Pair(Color(0xFF8B5CF6), Icons.Default.MenuBook)
+                    else -> Pair(Color(0xFF00E5FF), Icons.Default.Description)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF1E293B),
+                                    Color(0xFF0F172A),
+                                    Color(0xFF020617)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(docBgColor.copy(alpha = 0.2f))
+                                .border(1.dp, docBgColor.copy(alpha = 0.7f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = docIcon,
+                                contentDescription = "Documento",
+                                tint = docBgColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = docExt.uppercase(Locale.ROOT),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = docBgColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        )
+                    }
+                }
+            } else if (photo.isAudio) {
                 // Audio decorative background
                 Box(
                     modifier = Modifier
@@ -220,6 +282,20 @@ fun PhotoCard(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        } else if (photo.isDocument) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF3B82F6).copy(alpha = 0.9f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "DOC",
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
@@ -321,7 +397,7 @@ fun PhotoCard(
                         Text(
                             text = photo.dimensions,
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = CyanPrimary,
+                                color = if (photo.isDocument) Color(0xFF3B82F6) else CyanPrimary,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -331,6 +407,15 @@ fun PhotoCard(
                             text = photo.fileExtension.uppercase(),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = Color(0xFFF59E0B),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    } else if (photo.isDocument) {
+                        Text(
+                            text = photo.fileExtension.uppercase(),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color(0xFF3B82F6),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
