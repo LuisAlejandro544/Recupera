@@ -86,7 +86,7 @@ class ExampleRobolectricTest {
             health = FileHealth(
                 percentage = 85,
                 level = HealthLevel.GOOD,
-                details = "Audio de mensajería con metadatos y duración legible"
+                description = "Audio de mensajería con metadatos y duración legible"
             )
         )
         assertTrue(audio.isAudio)

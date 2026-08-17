@@ -1,8 +1,5 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,8 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,27 +16,16 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.ImageSearch
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -56,7 +40,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.CategoryFilter
@@ -66,9 +49,11 @@ import com.example.ui.components.FullscreenPhotoPreview
 import com.example.ui.components.PhotoCard
 import com.example.ui.components.RestoreSuccessDialog
 import com.example.ui.components.ScanProgressBanner
+import com.example.ui.components.screen.BatchRestoreBar
+import com.example.ui.components.screen.EmptyStateCard
+import com.example.ui.components.screen.OverviewCard
 import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.DarkBackground
-import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.TealAccent
 import com.example.viewmodel.PhotoRecoveryViewModel
 
@@ -102,14 +87,7 @@ fun PhotoRecoveryScreen(
         )
     }
 
-    // Calculate selected size
     val selectedPhotos = rawPhotos.filter { selectedPhotoIds.contains(it.id) }
-    val selectedBytes = selectedPhotos.sumOf { it.fileSizeBytes }
-    val selectedSizeText = if (selectedBytes >= 1024 * 1024) {
-        String.format("%.1f MB", selectedBytes / (1024.0 * 1024.0))
-    } else {
-        String.format("%.0f KB", selectedBytes / 1024.0)
-    }
 
     Scaffold(
         topBar = {
@@ -263,84 +241,14 @@ fun PhotoRecoveryScreen(
             }
 
             // Bottom Floating Bar for Batch Restoration
-            AnimatedVisibility(
-                visible = selectedPhotoIds.isNotEmpty(),
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
+            BatchRestoreBar(
+                selectedPhotos = selectedPhotos,
+                isRestoring = isRestoring,
+                onRestore = { viewModel.restoreSelectedPhotos() },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
                     .padding(16.dp)
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("batch_restore_bar"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "${selectedPhotos.size} archivo(s) seleccionado(s)",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    fontSize = 15.sp
-                                )
-                            )
-                            Text(
-                                text = "Tamaño total: $selectedSizeText",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = CyanPrimary,
-                                    fontSize = 12.sp
-                                )
-                            )
-                        }
-
-                        Button(
-                            onClick = { viewModel.restoreSelectedPhotos() },
-                            enabled = !isRestoring,
-                            modifier = Modifier
-                                .height(48.dp)
-                                .testTag("batch_restore_button"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
-                        ) {
-                            if (isRestoring) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = Color.Black,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Restaurando...", color = Color.Black, fontWeight = FontWeight.Bold)
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Restore,
-                                    contentDescription = null,
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Restaurar",
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            )
 
             // Fullscreen Zoomable Photo Preview Modal
             previewPhoto?.let { photo ->
@@ -362,210 +270,6 @@ fun PhotoRecoveryScreen(
                         viewModel.openSystemGallery()
                     }
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OverviewCard(
-    totalPhotosCount: Int,
-    totalSizeBytes: Long,
-    isScanning: Boolean,
-    onQuickScan: () -> Unit,
-    onDeepScan: () -> Unit
-) {
-    val formattedTotalSize = if (totalSizeBytes >= 1024 * 1024) {
-        String.format("%.1f MB", totalSizeBytes / (1024.0 * 1024.0))
-    } else {
-        String.format("%.0f KB", totalSizeBytes / 1024.0)
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("overview_stats_card"),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Archivos Detectados",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                    Text(
-                        text = "$totalPhotosCount detectados",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Espacio Recuperable",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                    Text(
-                        text = formattedTotalSize,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = CyanPrimary
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onQuickScan,
-                    enabled = !isScanning,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .testTag("quick_scan_button"),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ImageSearch,
-                        contentDescription = null,
-                        tint = CyanPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Escaneo Rápido",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Button(
-                    onClick = onDeepScan,
-                    enabled = !isScanning,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .testTag("deep_scan_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Restore,
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Escaneo Profundo",
-                        color = Color.Black,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyStateCard(
-    hasSearch: Boolean,
-    onClearSearch: () -> Unit,
-    onDeepScan: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 24.dp)
-            .testTag("empty_state_card"),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(CyanPrimary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PhotoLibrary,
-                    contentDescription = null,
-                    tint = CyanPrimary,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = if (hasSearch) "Sin coincidencias" else "No se encontraron fotos en este filtro",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                ),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = if (hasSearch) "Intenta buscar con otro término o limpia el buscador." else "Ejecuta un escaneo profundo para buscar rastros en caché y carpetas ocultas.",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            if (hasSearch) {
-                Button(
-                    onClick = onClearSearch,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
-                ) {
-                    Text("Limpiar Búsqueda", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Button(
-                    onClick = onDeepScan,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
-                ) {
-                    Text("Iniciar Escaneo Profundo", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
             }
         }
     }

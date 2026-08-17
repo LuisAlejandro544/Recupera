@@ -1,36 +1,55 @@
-# 🏛️ Arquitectura y Estructura del Proyecto
+# 🏛️ Arquitectura y Estructura Modular del Proyecto
 
-Este documento detalla la estructura de carpetas, módulos de código y el flujo de datos de **Recuperador Pro**.
+Este documento detalla la estructura modular de paquetes, módulos de código desacoplados y el flujo de datos de **Recuperador Pro**.
 
 ---
 
-## 📂 Árbol de Directorios
+## 📂 Árbol de Directorios Modular
 
 ```
 /
 ├── .github/
 │   └── workflows/
-│       └── sync_zip.yml                                 # GitHub Action para extraer y sincronizar código desde archivos zip
+│       └── sync_zip.yml                                 # GitHub Action para sincronizar código desde archivos comprimidos
 ├── app/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/example/
 │   │   │   │   ├── MainActivity.kt                      # Punto de entrada y gestión de permisos multimedia
-│   │   │   │   ├── engine/
-│   │   │   │   │   └── PhotoRecoveryEngine.kt           # Motor de escaneo, exclusión de galería, salud y restauración
+│   │   │   │   ├── engine/                              # ⚙️ Motor modular de recuperación y escaneo
+│   │   │   │   │   ├── PhotoRecoveryEngine.kt           # Orquestador del ciclo de escaneo y restauración
+│   │   │   │   │   ├── filter/
+│   │   │   │   │   │   └── ActiveGalleryFilter.kt       # Exclusión estricta de fotos/videos/audios activos en galería
+│   │   │   │   │   ├── health/
+│   │   │   │   │   │   └── FileHealthEvaluator.kt       # Diagnóstico de integridad binaria y cálculo de salud
+│   │   │   │   │   ├── scan/
+│   │   │   │   │   │   ├── TrashMediaScanner.kt         # Escaneo de papelera del sistema (Images/Video/Audio)
+│   │   │   │   │   │   └── StorageDirectoryScanner.kt   # Escaneo de miniaturas, WhatsApp, Telegram y deep storage
+│   │   │   │   │   └── restore/
+│   │   │   │   │       └── MediaRestorer.kt             # Escritura en MediaStore y re-indexación con MediaScanner
 │   │   │   │   ├── model/
-│   │   │   │   │   └── RecoverablePhoto.kt              # Modelos de datos, FileHealth, Enums de fuentes y filtros
+│   │   │   │   │   └── RecoverablePhoto.kt              # Entidades inmutables, FileHealth y Enums
 │   │   │   │   ├── viewmodel/
-│   │   │   │   │   └── PhotoRecoveryViewModel.kt        # Gestión de estados reactivos con StateFlow y Corrutinas
+│   │   │   │   │   └── PhotoRecoveryViewModel.kt        # Gestión reactiva de StateFlow y Corrutinas
 │   │   │   │   └── ui/
-│   │   │   │       ├── PhotoRecoveryScreen.kt           # Pantalla principal con estadísticas y cuadrícula
+│   │   │   │       ├── PhotoRecoveryScreen.kt           # Pantalla principal (Scaffold, TopBar, LazyVerticalGrid)
 │   │   │   │       ├── components/
-│   │   │   │       │   ├── FilterBar.kt                 # Barra de chips de categorías (Fotos, Videos, Audios, etc.)
-│   │   │   │       │   ├── FullscreenPhotoPreview.kt    # Visor interactivo, preview 5s de Video/Audio y Medidor de Salud
+│   │   │   │       │   ├── FilterBar.kt                 # Barra de chips de categorías y buscador
+│   │   │   │       │   ├── FullscreenPhotoPreview.kt    # Diálogo modal principal de previsualización
 │   │   │   │       │   ├── PermissionBanner.kt          # Banner reactivo para solicitar permisos
 │   │   │   │       │   ├── PhotoCard.kt                 # Tarjeta de elemento multimedia con badge de salud y checkbox
 │   │   │   │       │   ├── RestoreSuccessDialog.kt      # Diálogo de confirmación de restauración
-│   │   │   │       │   └── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
+│   │   │   │       │   ├── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
+│   │   │   │       │   ├── preview/                         # 🎬 Módulos de visualización y reproductores
+│   │   │   │       │   │   ├── AudioPreviewPlayer.kt        # Reproductor 5s con ecualizador animado y reinicio
+│   │   │   │       │   │   ├── VideoPreviewPlayer.kt        # Reproductor 5s con VideoView y control de loop
+│   │   │   │       │   │   ├── ImagePreviewContent.kt       # Visor de fotos zoomable con gestos multitáctiles
+│   │   │   │       │   │   ├── FileHealthMeterSection.kt    # Tarjeta de diagnóstico y barra de salud
+│   │   │   │       │   │   └── DetailRow.kt                 # Fila reutilizable para metadatos técnicos
+│   │   │   │       │   └── screen/                          # 📱 Componentes estructurales de pantalla
+│   │   │   │       │       ├── OverviewCard.kt              # Tarjeta superior de métricas y botones de escaneo
+│   │   │   │       │       ├── BatchRestoreBar.kt           # Barra flotante inferior para restauración por lotes
+│   │   │   │       │       └── EmptyStateCard.kt            # Estado vacío para filtros o búsquedas sin resultados
 │   │   │   │       └── theme/
 │   │   │   │           ├── Color.kt                     # Paleta de colores Dark Cyan / Teal Premium
 │   │   │   │           ├── Theme.kt                     # Configuración de Material 3 Dark Theme
@@ -45,10 +64,11 @@ Este documento detalla la estructura de carpetas, módulos de código y el flujo
 │   └── libs.versions.toml                               # Catálogo de versiones centralizado
 ├── zip/
 │   └── .gitkeep                                         # Directorio receptor de archivos comprimidos (.zip, .7z, .tar.gz)
-├── commit_message.txt                                   # Archivo opcional para mensaje de commit automatizado
+├── commit_message.txt                                   # Registro del mensaje de commit con detalles del cambio
 ├── README.md                                            # Documentación general del proyecto
 ├── ROADMAP.md                                           # Plan de desarrollo y siguientes etapas
-├── STRUCTURE.md                                         # Este documento de arquitectura
+├── STRUCTURE.md                                         # Arquitectura y estructura modular
+├── ESTRUCTURE.md                                        # Estructura sincronizada
 ├── AI_CONTEXT.md                                        # Contexto técnico para asistentes de IA
 ├── AGENTS.md                                            # Roles, instrucciones y buenas prácticas de agentes
 ├── metadata.json                                        # Metadatos para AI Studio
@@ -57,60 +77,28 @@ Este documento detalla la estructura de carpetas, módulos de código y el flujo
 
 ---
 
-## 🧩 Descripción de Capas
+## 🧩 Descripción de Capas y Módulos
 
-### 1. Capa de Datos (`model/`)
-- **`RecoverablePhoto`**: Entidad inmutable que representa un archivo recuperable. Contiene `id`, `name`, `filePath`, `contentUri`, `fileSizeBytes`, `sourceCategory`, `mediaType` (IMAGE / VIDEO / AUDIO), `durationMs`, `dimensions`, `health` (porcentaje y nivel de integridad) y estados de selección/restauración.
-- **`FileHealth` & `HealthLevel`**: Modelo de evaluación de integridad:
-  - `EXCELLENT` (95-100%): Archivo íntegro en papelera del sistema con metadatos completos.
-  - `GOOD` (75-94%): Archivo en caché o mensajería con cabecera intacta.
-  - `FAIR` (50-74%): Miniatura o archivo con resolución reducida.
-  - `DAMAGED` (10-49%): Fragmento con cabecera truncada o tamaño mínimo.
-- **`RecoverySource`**: Enum con las 5 fuentes detectadas (`TRASH_MEDIASTORE`, `THUMBNAILS_CACHE`, `HIDDEN_VAULT`, `APP_TEMP_CACHE`, `DEEP_STORAGE`).
-- **`CategoryFilter`** y **`SortOption`**: Enums para el control de filtrado (`ALL`, `PHOTOS`, `VIDEOS`, `AUDIOS`, etc.) y ordenación.
+### 1. Capa del Motor (`engine/`)
+- **`PhotoRecoveryEngine`**: Orquesta el flujo de escaneo y delega a los módulos especializados manteniendo la cohesión y archivos menores a 200 líneas.
+- **`ActiveGalleryFilter`**: Rastrear y memorizar las rutas e identidades de fotos/videos/audios actualmente activos en el almacenamiento normal para **excluirlas de los resultados**.
+- **`FileHealthEvaluator`**: Validador de cabeceras binarias (Magic Bytes para JPEG, PNG, MP4, MKV, MP3, OGG, FLAC, AMR, WAV) y motor heurístico de integridad (`EXCELLENT`, `GOOD`, `FAIR`, `DAMAGED`).
+- **`TrashMediaScanner`**: Consultas directas a `MediaStore` con `QUERY_ARG_MATCH_TRASHED` para recuperar imágenes, videos y audios de la papelera del sistema.
+- **`StorageDirectoryScanner`**: Exploración especializada de carpetas `.thumbnails`, cachés de mensajería (WhatsApp, Telegram) y Deep Storage.
+- **`MediaRestorer`**: Escribe el flujo de bytes de vuelta al `MediaStore` con `IS_PENDING = 0` y ejecuta `MediaScannerConnection` para visibilidad inmediata en el teléfono.
 
 ---
 
-### 2. Capa del Motor (`engine/`)
-- **`PhotoRecoveryEngine`**:
-  - `loadActiveGallerySignatures()`: Rastrear y memorizar las rutas e identidades de fotos/videos/audios actualmente en el almacenamiento normal para **excluirlas de los resultados**.
-  - `performScan(deepScan)`: Orquesta las 4 fases de escaneo asíncrono emitiendo progreso mediante lambdas suspendidas.
-  - `checkMediaMagicBytes()`: Validador de cabeceras binarias (JPEG, PNG, MP4, MKV, MP3, OGG, FLAC, AMR, WAV, etc.).
-  - `calculateFileHealth()`: Motor heurístico que evalúa el estado del archivo según su origen, tamaño, duración y validez de cabecera.
-  - `restorePhoto()`: Escribe el flujo de bytes de vuelta al `MediaStore` (`Images`, `Video`, `Audio`) con `IS_PENDING = 0` y ejecuta `MediaScannerConnection` para que aparezca instantáneamente en el teléfono.
+### 2. Capa de Previsualización (`ui/components/preview/`)
+- **`AudioPreviewPlayer`**: Reproductor multimedia acotado a 5 segundos con ecualizador animado de 5 barras, control de pausa/reproducción, reinicio y contador en tiempo real.
+- **`VideoPreviewPlayer`**: Reproductor integrado con `VideoView` nativo, limitador de 5s, reinicio y barra de progreso.
+- **`ImagePreviewContent`**: Visor de imágenes de alta resolución con soporte para gestos multitáctiles (zoom de 1x a 4.5x y paneo).
+- **`FileHealthMeterSection`**: Indicador visual y porcentaje de salud con colores dinámicos según el nivel de integridad.
+- **`DetailRow`**: Componente de diseño limpio para mostrar metadatos técnicos del archivo.
 
 ---
 
-### 3. Capa de Presentación (`viewmodel/` y `ui/`)
-- **`PhotoRecoveryViewModel`**:
-  - Expondrá `StateFlow` reactivos: `rawPhotos`, `displayedPhotos`, `scanProgress`, `selectedPhotoIds`, `activeFilter`, `activeSort`, `searchQuery`, `selectedPreviewPhoto`, `isRestoring`, `restoreSummary`.
-  - Concatena las transformaciones reactivas mediante `combine(...)` para que los filtros y búsquedas respondan a 60 FPS sin bloquear el hilo principal.
-- **Jetpack Compose UI**:
-  - Componentes modulares y reutilizables en `ui/components/`.
-  - Preview de Video (5s) y Preview de Audio (5s con ecualizador animado y control de reproducción).
-  - Medidor de salud integrado en las tarjetas de cuadrícula y ficha técnica detallada.
-
----
-
-### 4. Automatización y CI/CD (`.github/workflows/`)
-- **`sync_zip.yml`**: Flujo de GitHub Actions que permite subir archivos comprimidos (`.zip`, `.7z`, `.tar.gz`, `.tar`, `.tgz`) a la carpeta `zip/`, descomprimirlos automáticamente, sincronizar y sobreescribir el código base con `rsync`, eliminar el archivo temporal y realizar un commit enmendado (`--amend`) con force-push para mantener un árbol de Git limpio.
-
----
-
-## 🔄 Flujo de Datos
-
-```
-[ Sistema de Archivos / MediaStore ]
-               │
-               ▼
-[ PhotoRecoveryEngine ] ── (Filtra archivos activos en Galería / Calcula Salud)
-               │
-               ▼ Emite lista de fotos/videos/audios borrados con FileHealth
-[ PhotoRecoveryViewModel ] ── (StateFlow / Coroutines)
-               │
-               ▼ Observado reactivamente
-[ Jetpack Compose UI ] ──> [ Previsualiza 5s / Evalúa Salud / Pulsa Restaurar ]
-               │
-               ▼
-[ PhotoRecoveryEngine.restorePhoto() ] ──> [ MediaStore / Music / Pictures / Movies ]
-```
+### 3. Capa de Pantalla Principal (`ui/components/screen/`)
+- **`OverviewCard`**: Tarjeta de resumen de archivos detectados, espacio recuperable y accesos rápidos a Escaneo Rápido y Profundo.
+- **`BatchRestoreBar`**: Barra flotante animada que calcula el tamaño acumulado y ejecuta la restauración por lotes.
+- **`EmptyStateCard`**: Componente visual amigable con acciones para limpiar búsqueda o iniciar escaneo profundo.

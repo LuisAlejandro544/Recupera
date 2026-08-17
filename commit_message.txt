@@ -1,0 +1,26 @@
+refactor(modular): modularización y desacoplamiento de Engine, FullscreenPreview y Screen
+
+- Engine modularizado en com.example.engine:
+  * filter/ActiveGalleryFilter: exclusión estricta de fotos/videos/audios activos en galería.
+  * health/FileHealthEvaluator: validación binaria de magic bytes y diagnóstico heurístico de integridad.
+  * scan/TrashMediaScanner: escaneo de papelera del sistema con soporte para imágenes, videos y audios.
+  * scan/StorageDirectoryScanner: escaneo de miniaturas, carpetas de mensajería (WhatsApp, Telegram) y deep storage.
+  * restore/MediaRestorer: inserción en MediaStore y sincronización con MediaScannerConnection.
+  * PhotoRecoveryEngine: orquestador limpio y desacoplado (< 150 líneas).
+
+- Preview modularizado en com.example.ui.components.preview:
+  * AudioPreviewPlayer: reproductor de 5s con ecualizador visual dinámico y reinicio.
+  * VideoPreviewPlayer: reproductor de 5s con VideoView y control de reproducción.
+  * ImagePreviewContent: visor interactivo de fotos con zoom multitáctil (1x a 4.5x).
+  * FileHealthMeterSection: tarjeta de diagnóstico con medidor de salud y porcentaje.
+  * DetailRow: fila estandarizada para metadatos técnicos.
+  * FullscreenPhotoPreview: diálogo modal coordinado (< 200 líneas).
+
+- Screen modularizada en com.example.ui.components.screen:
+  * OverviewCard: tarjeta superior con métricas y disparadores de escaneo rápido/profundo.
+  * BatchRestoreBar: barra flotante inferior para restauración por lotes con cálculo de tamaño.
+  * EmptyStateCard: estado vacío responsivo con acciones para limpiar búsqueda o profundizar escaneo.
+  * PhotoRecoveryScreen: layout principal con Scaffold y LazyVerticalGrid (< 220 líneas).
+
+- Documentación y estructura actualizada:
+  * ESTRUCTURE.md y STRUCTURE.md sincronizados con el nuevo árbol modular de archivos.
