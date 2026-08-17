@@ -1,23 +1,5 @@
-feat(engine, ui, cleaner): integracion de recuperacion de documentos de ofimatica y limpiador de miniaturas huerfanas
+fix(ci): corregir fallo de cache en setup-python para compilacion de APK Debug
 
-- Recuperacion de Documentos de Trabajo y Ofimatica:
-  * Soporte integral para formatos ofimaticos y de lectura: PDF, DOCX, DOC, XLSX, XLS, CSV, PPTX, PPT, TXT, EPUB, RTF.
-  * Modelo y Clasificacion: MediaType.DOCUMENT, propiedad reactiva isDocument y filtro CategoryFilter.DOCUMENTS.
-  * Extraccion de Metadatos y Snippets: MediaMetadataExtractor.extractDocumentMetadata para parseo de tipos y extraccion de fragmentos de texto en formatos legibles.
-  * Evaluacion de Salud con Magic Bytes: FileHealthEvaluator ampliado con firmas binarias de documentos (%PDF, PK.. para ZIP/Office, D0 CF 11 E0 para OLE legacy, {\rt para RTF).
-  * Rutas de Escaneo Especializadas: StorageDirectoryScanner y MessagingAppScanner rastrean carpetas de WhatsApp Documents, Telegram Documents, Download y Documents.
-  * Restauracion de Documentos: MediaDestinationResolver y MimeTypeResolver actualizados para restaurar en colecciones publicas (Documents/Restored_Documents) mediante MediaStore.
-
-- Herramienta de Limpieza de Miniaturas Huerfanas:
-  * OrphanThumbnailCleaner: motor desacoplado para auditar y purgar copias residuales en directorios .thumbnails sin fuente activa, liberando espacio en almacenamiento interno.
-  * OrphanCleanerDialog: dialogo interactivo con analisis de archivos residuales, calculo de espacio recuperable, proceso de purga y confirmacion visual.
-  * Boton de acceso rapido en OverviewCard y gestion de estado en PhotoRecoveryViewModel.
-
-- Interfaz de Usuario y Previsualizacion:
-  * DocumentPreviewContent: visor con selector de iconos vectoriales por tipo de formato, metadatos y tarjeta de previsualizacion de contenido.
-  * Integracion en FullscreenPhotoPreview y tarjetas PhotoCard con badges visuales distintivos (DOC, PDF, XLSX, PPTX).
-  * CategoryFilterChips y OverviewCard actualizados con el nuevo filtro y contador de documentos.
-
-- Tests y Documentacion:
-  * ExampleRobolectricTest actualizado con pruebas unitarias para MediaType.DOCUMENT y OrphanCleanResult.
-  * Sincronizacion de documentacion en README.md, ROADMAP.md, ESTRUCTURE.md y AI_CONTEXT.md.
+- Se elimino la directiva `cache: 'pip'` del paso `actions/setup-python@v5` en `.github/workflows/build_apk_debug.yml`.
+- Causa raiz: `setup-python` intentaba localizar archivos `requirements.txt` o `pyproject.toml` inexistentes en el repositorio, provocando el fallo del runner al iniciar el entorno de entrega.
+- Resultado: El workflow de GitHub Actions ahora inicializa Python e instala `telethon` de forma limpia y transparente, permitiendo la compilacion del APK y su envio directo a Telegram sin interrupciones.
