@@ -13,6 +13,7 @@ Aplicación nativa para Android diseñada para **escanear, previsualizar y resta
 ## 🌟 Características Principales
 
 - 🔍 **Filtro Inteligente de Galería Activa**: Excluye automáticamente fotos, videos, audios y documentos que ya se encuentran guardados y visibles en tu almacenamiento normal, mostrando **únicamente archivos eliminados, en papelera o residuales**.
+- 🛡️ **Integración de Shizuku y Sui (Privilegios ADB / Magisk Root)**: Utiliza `UserService` de Shizuku (`bindUserService`) para ejecutar un proceso con privilegios ADB (UID 2000) o Root (UID 0), permitiendo inspeccionar directorios restringidos en Android 11+ (`Android/data`, cachés profundas y papeleras propietarias de Samsung y Xiaomi) sin necesidad de PC.
 - 📑 **Recuperación de Documentos de Trabajo y Ofimática**: Escanea y recupera archivos `PDF`, Word (`DOCX`, `DOC`), Excel (`XLSX`, `XLS`, `CSV`), PowerPoint (`PPTX`, `PPT`), texto plano (`TXT`, `RTF`) y libros digitales (`EPUB`) con visor de metadatos y fragmentos de texto.
 - 🧹 **Limpieza de Miniaturas Huérfanas (Orphan Thumbnail Cleaner)**: Detecta y purga de forma segura las miniaturas residuales en directorios `.thumbnails` cuyos archivos originales ya no existen, liberando valiosos megabytes de almacenamiento.
 - 🩺 **Medidor de Salud del Archivo (File Health Meter)**: Diagnóstico en tiempo real del estado y porcentaje de integridad del archivo recuperable (100% Íntegro en papelera, 85-98% en carpetas de apps, 40-70% en fragmentos o miniaturas).

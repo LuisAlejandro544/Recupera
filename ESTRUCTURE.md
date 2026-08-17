@@ -17,6 +17,14 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   ├── main/
 │   │   │   ├── java/com/example/
 │   │   │   │   ├── MainActivity.kt                      # Punto de entrada y gestión adaptativa de permisos
+│   │   │   │   ├── shizuku/                             # 🛡️ Integración de Shizuku (Privilegios ADB / Sistema)
+│   │   │   │   │   ├── ShizukuManager.kt                # Orquestador del Binder, ciclo de vida, Sui y solicitud de permisos
+│   │   │   │   │   ├── ShizukuState.kt                  # Modelo inmutable de estado de conexión y privilegios
+│   │   │   │   │   ├── model/
+│   │   │   │   │   │   └── ShizukuScannedItem.kt        # Modelo Parcelable para intercambio IPC entre procesos
+│   │   │   │   │   └── service/
+│   │   │   │   │       ├── ShizukuScanUserService.kt    # Servicio Binder remoto con UID 2000/0 y transacciones IPC
+│   │   │   │   │       └── ShizukuServiceClient.kt      # Cliente de enlace y desvinculación con UserServiceArgs
 │   │   │   │   ├── permission/                          # 🔐 Gestión de permisos de almacenamiento
 │   │   │   │   │   └── StoragePermissionManager.kt      # Verificación de permisos Scoped Storage y All Files Access (API 30+)
 │   │   │   │   ├── engine/                              # ⚙️ Motor modular de recuperación y escaneo
@@ -35,6 +43,7 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │   │   │   ├── MessagingAppScanner.kt       # Escaneo de WhatsApp (Audio, Video, Docs, Statuses), Telegram y Recordings
 │   │   │   │   │   │   ├── DeepStorageScanner.kt        # Escaneo profundo de disco recursivo
 │   │   │   │   │   │   ├── TrashMediaScanner.kt         # Fachada de papelera del sistema MediaStore
+│   │   │   │   │   │   ├── ShizukuVendorTrashScanner.kt # Escaneo de papeleras protegidas de fabricantes y Android/data
 │   │   │   │   │   │   └── trash/
 │   │   │   │   │   │       └── MediaStoreTrashQueryHelper.kt # Ejecutor genérico de consultas MediaStore con MATCH_ONLY
 │   │   │   │   │   └── restore/
@@ -53,6 +62,8 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │       │   ├── PhotoCard.kt                 # Tarjeta de elemento multimedia con badge de salud y checkbox
 │   │   │   │       │   ├── RestoreSuccessDialog.kt      # Diálogo de confirmación de restauración
 │   │   │   │       │   ├── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
+│   │   │   │       │   ├── settings/                        # ⚙️ Diálogos de configuración e integraciones
+│   │   │   │       │   │   └── ShizukuSettingsDialog.kt     # Diálogo de vinculación, guía y activación de Shizuku
 │   │   │   │       │   ├── cleaner/                         # 🧹 Herramienta de limpieza de miniaturas
 │   │   │   │       │   │   └── OrphanCleanerDialog.kt       # Diálogo modal para auditar y purgar miniaturas huérfanas
 │   │   │   │       │   ├── preview/                         # 🎬 Módulos de visualización y reproductores

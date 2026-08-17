@@ -454,6 +454,7 @@ fun SourceBadge(source: RecoverySource) {
         RecoverySource.APP_TEMP_CACHE -> Triple("Apps", Color(0xFF10B981), Color.Black)
         RecoverySource.HIDDEN_VAULT -> Triple("Oculta", Color(0xFF8B5CF6), Color.White)
         RecoverySource.DEEP_STORAGE -> Triple("Disco", Color(0xFFF59E0B), Color.Black)
+        RecoverySource.SHIZUKU_SYSTEM -> Triple("Shizuku", Color(0xFF00E5FF), Color.Black)
     }
 
     Box(

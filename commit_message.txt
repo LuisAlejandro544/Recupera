@@ -1,5 +1,9 @@
-fix(ci): corregir fallo de cache en setup-python para compilacion de APK Debug
+feat(shizuku): integracion completa de Shizuku UserService, Sui y escaneo de bovedas protegidas
 
-- Se elimino la directiva `cache: 'pip'` del paso `actions/setup-python@v5` en `.github/workflows/build_apk_debug.yml`.
-- Causa raiz: `setup-python` intentaba localizar archivos `requirements.txt` o `pyproject.toml` inexistentes en el repositorio, provocando el fallo del runner al iniciar el entorno de entrega.
-- Resultado: El workflow de GitHub Actions ahora inicializa Python e instala `telethon` de forma limpia y transparente, permitiendo la compilacion del APK y su envio directo a Telegram sin interrupciones.
+- Se incorporaron las dependencias oficiales `dev.rikka.shizuku:api` y `dev.rikka.shizuku:provider` (v13.1.5) junto a la declaración de `rikka.shizuku.ShizukuProvider` en `AndroidManifest.xml`.
+- Se implementó `ShizukuScanUserService` como servicio Binder independiente con UID 2000 (Shell ADB) o UID 0 (Root), transacciones IPC optimizadas y manejo de salida limpia con código de destrucción `16777115`.
+- Se desarrolló `ShizukuServiceClient` para orquestar la vinculación segura (`bindUserService`/`unbindUserService`) con `UserServiceArgs` y recuperación asíncrona mediante corrutinas.
+- Se agregó soporte para detección e inicialización de `Sui` (Magisk Root) y actualización dinámica de estado en `ShizukuManager` y `ShizukuState`.
+- Se creó `ShizukuVendorTrashScanner` y se integró en `PhotoRecoveryEngine` para escanear directorios de sistema inaccesibles en Android 11+ (`Android/data`, papeleras de Samsung Gallery `com.sec.android.gallery3d`, Xiaomi `com.miui.gallery`, WhatsApp, etc.).
+- Se implementó la categoría de filtrado `CategoryFilter.SHIZUKU` y la insignia visual `SourceBadge` para identificar elementos rescatados mediante privilegios de sistema.
+- Se mantuvieron sincronizadas las suites de pruebas unitarias y documentación técnica.

@@ -8,6 +8,7 @@ val CyanPrimaryDark = Color(0xFF0096C7)
 val CyanPrimaryLight = Color(0xFF90E0EF)
 
 val TealAccent = Color(0xFF06D6A0)
+val EmeraldGreen = Color(0xFF10B981)
 val AmberWarning = Color(0xFFF59E0B)
 val RoseError = Color(0xFFEF4444)
 

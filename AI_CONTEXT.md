@@ -46,3 +46,10 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
 7. **Automatización y Despliegue CI/CD**:
    - `build_apk_debug.yml`: Compila el APK Debug con firma autogenerada en el runner y entrega directa remota (hasta 2GB).
    - `sync_zip.yml`: Sincronización continua y unificación de commits desde archivos comprimidos.
+8. **Integración con Shizuku y Sui (ADB / Root)**:
+   - Shizuku opera mediante un IPC Binder (`rikka.shizuku.Shizuku`) con UID 2000 (Shell ADB) o UID 0 (Root).
+   - Soporte automático para `Sui` (Magisk) mediante `rikka.sui.Sui.init()` y verificación con `Sui.isSui()`.
+   - Implementación de `ShizukuScanUserService` vinculado mediante `Shizuku.bindUserService(UserServiceArgs, ...)` para ejecutar código nativo en el proceso Shell sin restricciones de `Android/data`.
+   - Salida limpia del proceso remoto con código de transacción `16777115` (`System.exit(0)`).
+   - Todas las llamadas al Binder están protegidas con `Shizuku.pingBinder()` y capturas seguras de excepciones.
+   - El permiso se solicita dinámicamente con `Shizuku.requestPermission(SHIZUKU_REQUEST_CODE)`.

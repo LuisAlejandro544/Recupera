@@ -27,7 +27,8 @@ enum class RecoverySource(val displayName: String, val description: String) {
     THUMBNAILS_CACHE("Caché de Miniaturas", "Copias de seguridad en caché de alta resolución"),
     APP_TEMP_CACHE("Caché de Apps", "Restos temporales de redes sociales y apps"),
     HIDDEN_VAULT("Carpetas Ocultas", "Archivos en directorios ocultos (.nomedia)"),
-    DEEP_STORAGE("Almacenamiento Profundo", "Archivos huérfanos escaneados en disco")
+    DEEP_STORAGE("Almacenamiento Profundo", "Archivos huérfanos escaneados en disco"),
+    SHIZUKU_SYSTEM("Bóvedas Shizuku", "Archivos en carpetas protegidas y papeleras del fabricante")
 }
 
 enum class CategoryFilter(val title: String) {
@@ -39,7 +40,8 @@ enum class CategoryFilter(val title: String) {
     TRASH("Papelera"),
     THUMBNAILS("Miniaturas"),
     HIDDEN("Ocultas"),
-    APP_CACHE("Caché Apps")
+    APP_CACHE("Caché Apps"),
+    SHIZUKU("Shizuku")
 }
 
 enum class SortOption(val title: String) {

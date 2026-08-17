@@ -16,6 +16,8 @@ import com.example.model.RecoverySource
 import com.example.model.RestoreSummary
 import com.example.model.ScanProgress
 import com.example.model.SortOption
+import com.example.shizuku.ShizukuManager
+import com.example.shizuku.ShizukuState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -72,6 +74,16 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
     private val _orphanCleanResult = MutableStateFlow<OrphanCleanResult?>(null)
     val orphanCleanResult: StateFlow<OrphanCleanResult?> = _orphanCleanResult.asStateFlow()
 
+    // Shizuku system integration state
+    val shizukuState: StateFlow<ShizukuState> = ShizukuManager.shizukuState
+
+    private val _showShizukuDialog = MutableStateFlow(false)
+    val showShizukuDialog: StateFlow<Boolean> = _showShizukuDialog.asStateFlow()
+
+    init {
+        ShizukuManager.initialize()
+    }
+
     // Derived filtered and sorted photos stream
     val displayedPhotos: StateFlow<List<RecoverablePhoto>> = combine(
         _rawPhotos,
@@ -94,6 +106,7 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
                     CategoryFilter.THUMBNAILS -> photo.sourceCategory == RecoverySource.THUMBNAILS_CACHE
                     CategoryFilter.HIDDEN -> photo.sourceCategory == RecoverySource.HIDDEN_VAULT
                     CategoryFilter.APP_CACHE -> photo.sourceCategory == RecoverySource.APP_TEMP_CACHE
+                    CategoryFilter.SHIZUKU -> photo.sourceCategory == RecoverySource.SHIZUKU_SYSTEM
                     CategoryFilter.ALL -> true
                 }
             }
@@ -308,5 +321,26 @@ class PhotoRecoveryViewModel(application: Application) : AndroidViewModel(applic
     fun closeOrphanCleaner() {
         _showOrphanCleanerDialog.value = false
         _orphanCleanResult.value = null
+    }
+
+    fun openShizukuSettings() {
+        _showShizukuDialog.value = true
+        ShizukuManager.refreshStatus()
+    }
+
+    fun closeShizukuSettings() {
+        _showShizukuDialog.value = false
+    }
+
+    fun requestShizukuPermission() {
+        ShizukuManager.requestPermission()
+    }
+
+    fun refreshShizukuStatus() {
+        ShizukuManager.refreshStatus()
+    }
+
+    fun toggleShizukuEnhancedScan(enabled: Boolean) {
+        ShizukuManager.toggleEnhancedScan(enabled)
     }
 }

@@ -130,4 +130,29 @@ class ExampleRobolectricTest {
         assertEquals("10.0 MB", result.formattedFreedSize)
         assertFalse(result.isDryRun)
     }
+
+    @Test
+    fun `test shizuku state and privilege calculation`() {
+        val stateAdb = com.example.shizuku.ShizukuState(
+            status = com.example.shizuku.ShizukuStatus.AUTHORIZED_ACTIVE,
+            isBinderAlive = true,
+            isPermissionGranted = true,
+            version = 13,
+            uid = 2000,
+            isEnhancedScanEnabled = true
+        )
+        assertTrue(stateAdb.isReadyForEnhancedScan)
+        assertEquals("ADB (Shell de Sistema)", stateAdb.uidLabel)
+
+        val stateRoot = com.example.shizuku.ShizukuState(
+            status = com.example.shizuku.ShizukuStatus.AUTHORIZED_ACTIVE,
+            isBinderAlive = true,
+            isPermissionGranted = true,
+            version = 13,
+            uid = 0,
+            isEnhancedScanEnabled = false
+        )
+        assertFalse(stateRoot.isReadyForEnhancedScan)
+        assertEquals("Root (Superusuario)", stateRoot.uidLabel)
+    }
 }

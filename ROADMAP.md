@@ -65,8 +65,19 @@ Plan de evolución estratégica y técnica para el desarrollo de **Recuperador P
 
 ---
 
-## 📌 Fase 6: Optimización Avanzada y Distribución (Uptodown / Direct APK 🚀)
+## 📌 Fase 6: Integración Shizuku y Distribución (Uptodown / Direct APK 🚀)
 
+- [x] **Integración de Shizuku (Privilegios de Sistema / ADB)**:
+  - Vinculación reactiva con el Binder de Shizuku (`Shizuku.addBinderReceivedListener`, `Shizuku.addBinderDeadListener`).
+  - Detección de estado en tiempo real (Conectado / Desconectado / Sin Autorización) y soporte nativo para `Sui` (Magisk).
+  - Flujo de solicitud de permisos en 1-toque (`Shizuku.requestPermission()`).
+  - Panel de Ajustes de Shizuku (`ShizukuSettingsDialog`) con guía paso a paso para usuarios móviles sin PC.
+  - Switch de activación para el modo de escaneo con privilegios de sistema.
+- [x] **Escaneo de Bóvedas de Sistema con Shizuku UserService**:
+  - Implementación de `ShizukuScanUserService` (`bindUserService` con `UserServiceArgs`, UID 2000/0) y `ShizukuServiceClient`.
+  - Lectura profunda de directorios restringidos en Android 11+ (`Android/data`, WhatsApp, Telegram, papeleras de Samsung Gallery `com.sec.android.gallery3d` y Xiaomi `com.miui.gallery`).
+  - Filtrado contra biblioteca activa y cálculo de diagnóstico `FileHealth`.
+  - Terminación limpia de procesos remotos con código de transacción `16777115`.
 - [ ] **Recuperación de Paquetes de Instalación (APKs)**:
   - Búsqueda de archivos `.apk` antiguos en cachés de descarga y almacenamiento interno.
 - [ ] **Detector de Archivos Duplicados**: Análisis hash (MD5/SHA-256) para identificar y eliminar duplicados.

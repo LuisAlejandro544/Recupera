@@ -77,7 +77,7 @@ class PhotoRecoveryEngine(private val context: Context) {
         onProgress(
             ScanProgress(
                 isScanning = true,
-                progress = 0.6f,
+                progress = 0.55f,
                 currentPath = "Buscando audios borrados, notas de voz y carpetas ocultas...",
                 filesScannedCount = totalFilesScanned,
                 photosFoundCount = foundPhotos.size,
@@ -92,6 +92,29 @@ class PhotoRecoveryEngine(private val context: Context) {
             activeFingerprints = activeSignatures.activeFingerprints
         ) {
             totalFilesScanned++
+        }
+
+        // Phase 3.5: Scan Shizuku Protected Vaults (Samsung/Xiaomi Trash & Android/data) if enabled
+        if (com.example.shizuku.ShizukuManager.shizukuState.value.isReadyForEnhancedScan) {
+            onProgress(
+                ScanProgress(
+                    isScanning = true,
+                    progress = 0.70f,
+                    currentPath = "Escaneando con privilegios ADB/Shizuku (Android/data y papelera del fabricante)...",
+                    filesScannedCount = totalFilesScanned,
+                    photosFoundCount = foundPhotos.size,
+                    phaseName = "Bóvedas Shizuku / Sistema"
+                )
+            )
+            com.example.engine.scan.ShizukuVendorTrashScanner.scanProtectedVaults(
+                context = context,
+                foundPhotos = foundPhotos,
+                seenPaths = seenPaths,
+                activePaths = activeSignatures.activePaths,
+                activeFingerprints = activeSignatures.activeFingerprints
+            ) {
+                totalFilesScanned++
+            }
         }
 
         // Phase 4: Deep Storage Scan if requested

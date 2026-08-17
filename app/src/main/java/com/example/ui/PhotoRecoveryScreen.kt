@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,12 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.CategoryFilter
 import com.example.model.RecoverySource
+import com.example.shizuku.ShizukuStatus
 import com.example.ui.components.FilterBar
 import com.example.ui.components.FullscreenPhotoPreview
 import com.example.ui.components.PhotoCard
 import com.example.ui.components.RestoreSuccessDialog
 import com.example.ui.components.ScanProgressBanner
 import com.example.ui.components.cleaner.OrphanCleanerDialog
+import com.example.ui.components.settings.ShizukuSettingsDialog
 import com.example.ui.components.screen.BatchRestoreBar
 import com.example.ui.components.screen.EmptyStateCard
 import com.example.ui.components.screen.OverviewCard
@@ -79,6 +83,9 @@ fun PhotoRecoveryScreen(
     val isCleaningOrphans by viewModel.isCleaningOrphans.collectAsState()
     val orphanCleanResult by viewModel.orphanCleanResult.collectAsState()
 
+    val shizukuState by viewModel.shizukuState.collectAsState()
+    val showShizukuDialog by viewModel.showShizukuDialog.collectAsState()
+
     // Calculate category counts
     val categoryCounts = remember(rawPhotos) {
         mapOf<CategoryFilter, Int>(
@@ -90,7 +97,8 @@ fun PhotoRecoveryScreen(
             CategoryFilter.TRASH to rawPhotos.count { it.sourceCategory == RecoverySource.TRASH_MEDIASTORE },
             CategoryFilter.THUMBNAILS to rawPhotos.count { it.sourceCategory == RecoverySource.THUMBNAILS_CACHE },
             CategoryFilter.HIDDEN to rawPhotos.count { it.sourceCategory == RecoverySource.HIDDEN_VAULT },
-            CategoryFilter.APP_CACHE to rawPhotos.count { it.sourceCategory == RecoverySource.APP_TEMP_CACHE }
+            CategoryFilter.APP_CACHE to rawPhotos.count { it.sourceCategory == RecoverySource.APP_TEMP_CACHE },
+            CategoryFilter.SHIZUKU to rawPhotos.count { it.sourceCategory == RecoverySource.SHIZUKU_SYSTEM }
         )
     }
 
@@ -152,6 +160,31 @@ fun PhotoRecoveryScreen(
                                 contentDescription = "Seleccionar todo",
                                 tint = CyanPrimary
                             )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.openShizukuSettings() },
+                        modifier = Modifier.testTag("open_shizuku_settings_button")
+                    ) {
+                        Box(contentAlignment = Alignment.TopEnd) {
+                            Icon(
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = "Configuración Shizuku",
+                                tint = when (shizukuState.status) {
+                                    ShizukuStatus.AUTHORIZED_ACTIVE -> CyanPrimary
+                                    ShizukuStatus.RUNNING_UNAUTHORIZED -> Color(0xFFF59E0B)
+                                    ShizukuStatus.NOT_RUNNING -> Color(0xFF94A3B8)
+                                }
+                            )
+                            if (shizukuState.status == ShizukuStatus.AUTHORIZED_ACTIVE) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981))
+                                )
+                            }
                         }
                     }
 
@@ -288,6 +321,17 @@ fun PhotoRecoveryScreen(
                     cleanResult = orphanCleanResult,
                     onCleanOrphans = { viewModel.executeOrphanClean() },
                     onDismiss = { viewModel.closeOrphanCleaner() }
+                )
+            }
+
+            // Shizuku Settings and Status Dialog
+            if (showShizukuDialog) {
+                ShizukuSettingsDialog(
+                    shizukuState = shizukuState,
+                    onRequestPermission = { viewModel.requestShizukuPermission() },
+                    onRefreshStatus = { viewModel.refreshShizukuStatus() },
+                    onToggleEnhancedScan = { viewModel.toggleShizukuEnhancedScan(it) },
+                    onDismiss = { viewModel.closeShizukuSettings() }
                 )
             }
         }
