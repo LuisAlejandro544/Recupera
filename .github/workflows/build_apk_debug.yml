@@ -22,41 +22,48 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Setup Gradle & Cache
         uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: '8.13'
           cache-read-only: false
           gradle-home-cache-cleanup: true
 
       - name: Ensure Android Debug Keystore Exists
         run: |
           if [ ! -f debug.keystore ]; then
-            echo "Generating debug.keystore..."
-            keytool -genkey -v -keystore debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-            echo "debug.keystore generated successfully."
+            if [ -f debug.keystore.base64 ]; then
+              echo "Decoding debug.keystore from base64..."
+              base64 -d debug.keystore.base64 > debug.keystore
+            else
+              echo "Generating debug.keystore with keytool..."
+              keytool -genkey -v -keystore debug.keystore \
+                -storepass android \
+                -alias androiddebugkey \
+                -keypass android \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+            echo "debug.keystore ready."
           else
             echo "debug.keystore already exists."
           fi
 
       - name: Ensure Gradle Wrapper is Executable
         run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-          else
-            gradle wrapper
-            chmod +x gradlew
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.13
           fi
+          chmod +x gradlew
 
       - name: Build Debug APK
         run: |
-          ./gradlew assembleDebug --build-cache --parallel --stacktrace
+          ./gradlew :app:assembleDebug --build-cache --stacktrace --info
 
       - name: Locate Built APK
         id: find-apk

@@ -72,6 +72,8 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │       └── ExampleUnitTest.kt
 │   └── build.gradle.kts                                 # Dependencias y configuración de compilación de la app
 ├── gradle/
+│   ├── wrapper/
+│   │   └── gradle-wrapper.properties                    # Configuración fijada de Gradle 8.13 para compatibilidad CI
 │   └── libs.versions.toml                               # Catálogo de versiones centralizado
 ├── zip/
 │   └── .gitkeep                                         # Directorio receptor de archivos comprimidos (.zip, .7z, .tar.gz)
