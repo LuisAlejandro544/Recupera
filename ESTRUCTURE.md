@@ -10,23 +10,35 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 /
 ├── .github/
 │   └── workflows/
+│       ├── build_apk_debug.yml                          # Compilación de APK Debug y entrega remota directa (hasta 2GB)
 │       └── sync_zip.yml                                 # GitHub Action para sincronizar código desde archivos comprimidos
 ├── app/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/example/
-│   │   │   │   ├── MainActivity.kt                      # Punto de entrada y gestión de permisos multimedia
+│   │   │   │   ├── MainActivity.kt                      # Punto de entrada y gestión adaptativa de permisos
+│   │   │   │   ├── permission/                          # 🔐 Gestión de permisos de almacenamiento
+│   │   │   │   │   └── StoragePermissionManager.kt      # Verificación de permisos Scoped Storage y All Files Access (API 30+)
 │   │   │   │   ├── engine/                              # ⚙️ Motor modular de recuperación y escaneo
 │   │   │   │   │   ├── PhotoRecoveryEngine.kt           # Orquestador del ciclo de escaneo y restauración
+│   │   │   │   │   ├── extractor/
+│   │   │   │   │   │   └── MediaMetadataExtractor.kt    # Extracción desacoplada de metadatos (dimensiones, duración, rotación)
 │   │   │   │   │   ├── filter/
 │   │   │   │   │   │   └── ActiveGalleryFilter.kt       # Exclusión estricta de fotos/videos/audios activos en galería
 │   │   │   │   │   ├── health/
 │   │   │   │   │   │   └── FileHealthEvaluator.kt       # Diagnóstico de integridad binaria y cálculo de salud
 │   │   │   │   │   ├── scan/
-│   │   │   │   │   │   ├── TrashMediaScanner.kt         # Escaneo de papelera del sistema (Images/Video/Audio)
-│   │   │   │   │   │   └── StorageDirectoryScanner.kt   # Escaneo de miniaturas, WhatsApp, Telegram y deep storage
+│   │   │   │   │   │   ├── StorageDirectoryScanner.kt   # Fachada coordinadora de escaneo en almacenamiento
+│   │   │   │   │   │   ├── ThumbnailCacheScanner.kt     # Escaneo de carpetas .thumbnails y cachés de miniaturas
+│   │   │   │   │   │   ├── MessagingAppScanner.kt       # Escaneo de WhatsApp (Audio, Video, Statuses), Telegram y Recordings
+│   │   │   │   │   │   ├── DeepStorageScanner.kt        # Escaneo profundo de disco recursivo
+│   │   │   │   │   │   ├── TrashMediaScanner.kt         # Fachada de papelera del sistema MediaStore
+│   │   │   │   │   │   └── trash/
+│   │   │   │   │   │       └── MediaStoreTrashQueryHelper.kt # Ejecutor genérico de consultas MediaStore con MATCH_ONLY
 │   │   │   │   │   └── restore/
-│   │   │   │   │       └── MediaRestorer.kt             # Escritura en MediaStore y re-indexación con MediaScanner
+│   │   │   │   │       ├── MediaRestorer.kt             # Escritura en MediaStore y sincronización con MediaScannerConnection
+│   │   │   │   │       ├── MimeTypeResolver.kt          # Resolución de tipos MIME y wildcards de escaneo
+│   │   │   │   │       └── MediaDestinationResolver.kt  # Resolución de rutas públicas de restauración y nombres limpios
 │   │   │   │   ├── model/
 │   │   │   │   │   └── RecoverablePhoto.kt              # Entidades inmutables, FileHealth y Enums
 │   │   │   │   ├── viewmodel/
@@ -36,7 +48,6 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │       ├── components/
 │   │   │   │       │   ├── FilterBar.kt                 # Barra de chips de categorías y buscador
 │   │   │   │       │   ├── FullscreenPhotoPreview.kt    # Diálogo modal principal de previsualización
-│   │   │   │       │   ├── PermissionBanner.kt          # Banner reactivo para solicitar permisos
 │   │   │   │       │   ├── PhotoCard.kt                 # Tarjeta de elemento multimedia con badge de salud y checkbox
 │   │   │   │       │   ├── RestoreSuccessDialog.kt      # Diálogo de confirmación de restauración
 │   │   │   │       │   ├── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
@@ -66,9 +77,9 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   └── .gitkeep                                         # Directorio receptor de archivos comprimidos (.zip, .7z, .tar.gz)
 ├── commit_message.txt                                   # Registro del mensaje de commit con detalles del cambio
 ├── README.md                                            # Documentación general del proyecto
+├── CONTRIBUTING.md                                      # Política de contribuciones del proyecto
 ├── ROADMAP.md                                           # Plan de desarrollo y siguientes etapas
-├── STRUCTURE.md                                         # Arquitectura y estructura modular
-├── ESTRUCTURE.md                                        # Estructura sincronizada
+├── ESTRUCTURE.md                                        # Estructura modular sincronizada
 ├── AI_CONTEXT.md                                        # Contexto técnico para asistentes de IA
 ├── AGENTS.md                                            # Roles, instrucciones y buenas prácticas de agentes
 ├── metadata.json                                        # Metadatos para AI Studio
@@ -80,16 +91,27 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 ## 🧩 Descripción de Capas y Módulos
 
 ### 1. Capa del Motor (`engine/`)
-- **`PhotoRecoveryEngine`**: Orquesta el flujo de escaneo y delega a los módulos especializados manteniendo la cohesión y archivos menores a 200 líneas.
-- **`ActiveGalleryFilter`**: Rastrear y memorizar las rutas e identidades de fotos/videos/audios actualmente activos en el almacenamiento normal para **excluirlas de los resultados**.
+- **`PhotoRecoveryEngine`**: Orquesta el flujo de escaneo delegando a módulos especializados manteniéndose por debajo de 150 líneas.
+- **`MediaMetadataExtractor`**: Módulo desacoplado para extraer dimensiones, rotación y duraciones de fotos, videos y audios sin sobrecargar la memoria RAM.
+- **`ActiveGalleryFilter`**: Indexa firmas de archivos activos en la galería para **excluirlos estrictamente de los resultados recuperables**.
 - **`FileHealthEvaluator`**: Validador de cabeceras binarias (Magic Bytes para JPEG, PNG, MP4, MKV, MP3, OGG, FLAC, AMR, WAV) y motor heurístico de integridad (`EXCELLENT`, `GOOD`, `FAIR`, `DAMAGED`).
-- **`TrashMediaScanner`**: Consultas directas a `MediaStore` con `QUERY_ARG_MATCH_TRASHED` para recuperar imágenes, videos y audios de la papelera del sistema.
-- **`StorageDirectoryScanner`**: Exploración especializada de carpetas `.thumbnails`, cachés de mensajería (WhatsApp, Telegram) y Deep Storage.
-- **`MediaRestorer`**: Escribe el flujo de bytes de vuelta al `MediaStore` con `IS_PENDING = 0` y ejecuta `MediaScannerConnection` para visibilidad inmediata en el teléfono.
+- **`StorageDirectoryScanner`**: Fachada coordinadora que delega en los sub-escáneres:
+  - `ThumbnailCacheScanner`: Rastreo en `.thumbnails` de DCIM, Pictures, Movies y cachés de aplicaciones.
+  - `MessagingAppScanner`: Rastreo en carpetas de WhatsApp (`WhatsApp Voice Notes`, `WhatsApp Audio`, `.Statuses`), Telegram y grabaciones.
+  - `DeepStorageScanner`: Exploración profunda y recursiva de directorios respetando exclusiones de seguridad.
+- **`TrashMediaScanner` & `MediaStoreTrashQueryHelper`**: Consultas parametrizadas a `MediaStore` con `QUERY_ARG_MATCH_TRASHED` para recuperar imágenes, videos y audios de la papelera nativa de Android (API 30+).
+- **`MediaRestorer`**: Flujo de restauración modularizado apoyado en:
+  - `MimeTypeResolver`: Mapeo riguroso de tipos MIME e identificadores de indexación.
+  - `MediaDestinationResolver`: Resolución de carpetas públicas (`Pictures/Restored_Photos`, `Movies/Restored_Videos`, `Music/Restored_Audio`) y nombres de archivo limpios.
 
 ---
 
-### 2. Capa de Previsualización (`ui/components/preview/`)
+### 2. Capa de Permisos (`permission/`)
+- **`StoragePermissionManager`**: Abstracción para verificar y solicitar permisos Scoped Storage según versión de Android (API 29 a API 34+) y creación de intents para "Acceso a todos los archivos" (`MANAGE_EXTERNAL_STORAGE`).
+
+---
+
+### 3. Capa de Previsualización (`ui/components/preview/`)
 - **`AudioPreviewPlayer`**: Reproductor multimedia acotado a 5 segundos con ecualizador animado de 5 barras, control de pausa/reproducción, reinicio y contador en tiempo real.
 - **`VideoPreviewPlayer`**: Reproductor integrado con `VideoView` nativo, limitador de 5s, reinicio y barra de progreso.
 - **`ImagePreviewContent`**: Visor de imágenes de alta resolución con soporte para gestos multitáctiles (zoom de 1x a 4.5x y paneo).
@@ -98,7 +120,7 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 
 ---
 
-### 3. Capa de Pantalla Principal (`ui/components/screen/`)
+### 4. Capa de Pantalla Principal (`ui/components/screen/`)
 - **`OverviewCard`**: Tarjeta de resumen de archivos detectados, espacio recuperable y accesos rápidos a Escaneo Rápido y Profundo.
 - **`BatchRestoreBar`**: Barra flotante animada que calcula el tamaño acumulado y ejecuta la restauración por lotes.
 - **`EmptyStateCard`**: Componente visual amigable con acciones para limpiar búsqueda o iniciar escaneo profundo.

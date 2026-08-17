@@ -1,26 +1,29 @@
-refactor(modular): modularización y desacoplamiento de Engine, FullscreenPreview y Screen
+refactor(engine, permission): desarrollo modular de escáneres, restorer y permisos
 
-- Engine modularizado en com.example.engine:
-  * filter/ActiveGalleryFilter: exclusión estricta de fotos/videos/audios activos en galería.
-  * health/FileHealthEvaluator: validación binaria de magic bytes y diagnóstico heurístico de integridad.
-  * scan/TrashMediaScanner: escaneo de papelera del sistema con soporte para imágenes, videos y audios.
-  * scan/StorageDirectoryScanner: escaneo de miniaturas, carpetas de mensajería (WhatsApp, Telegram) y deep storage.
-  * restore/MediaRestorer: inserción en MediaStore y sincronización con MediaScannerConnection.
-  * PhotoRecoveryEngine: orquestador limpio y desacoplado (< 150 líneas).
+- Modularización de StorageDirectoryScanner:
+  * extractor/MediaMetadataExtractor: desacopla la extracción de dimensiones, rotación y duración para imágenes, videos y audios.
+  * scan/ThumbnailCacheScanner: escaneo especializado en directorios .thumbnails públicos y de caché.
+  * scan/MessagingAppScanner: rastreo especializado en WhatsApp (.Statuses, Audio, Voice Notes), Telegram y grabaciones.
+  * scan/DeepStorageScanner: recorrido recursivo de almacenamiento profundo con exclusiones de sandbox seguras.
+  * scan/StorageDirectoryScanner: fachada coordinadora ligera (< 120 líneas).
 
-- Preview modularizado en com.example.ui.components.preview:
-  * AudioPreviewPlayer: reproductor de 5s con ecualizador visual dinámico y reinicio.
-  * VideoPreviewPlayer: reproductor de 5s con VideoView y control de reproducción.
-  * ImagePreviewContent: visor interactivo de fotos con zoom multitáctil (1x a 4.5x).
-  * FileHealthMeterSection: tarjeta de diagnóstico con medidor de salud y porcentaje.
-  * DetailRow: fila estandarizada para metadatos técnicos.
-  * FullscreenPhotoPreview: diálogo modal coordinado (< 200 líneas).
+- Modularización de TrashMediaScanner:
+  * scan/trash/MediaStoreTrashQueryHelper: ejecutor genérico de consultas MediaStore con QUERY_ARG_MATCH_TRASHED (MATCH_ONLY) para API 30+.
+  * scan/TrashMediaScanner: fachada simplificada reduciendo más de 200 líneas de código duplicado a llamadas limpias (< 60 líneas).
 
-- Screen modularizada en com.example.ui.components.screen:
-  * OverviewCard: tarjeta superior con métricas y disparadores de escaneo rápido/profundo.
-  * BatchRestoreBar: barra flotante inferior para restauración por lotes con cálculo de tamaño.
-  * EmptyStateCard: estado vacío responsivo con acciones para limpiar búsqueda o profundizar escaneo.
-  * PhotoRecoveryScreen: layout principal con Scaffold y LazyVerticalGrid (< 220 líneas).
+- Modularización de MediaRestorer:
+  * restore/MimeTypeResolver: resolución centralizada de MIME types y wildcards de MediaScanner para fotos, videos y audios.
+  * restore/MediaDestinationResolver: resolución de rutas de almacenamiento público (Restored_Photos, Restored_Videos, Restored_Audio) y generación de nombres únicos.
+  * restore/MediaRestorer: orquestador de I/O y actualización MediaStore limpio y enfocado (< 110 líneas).
 
-- Documentación y estructura actualizada:
-  * ESTRUCTURE.md y STRUCTURE.md sincronizados con el nuevo árbol modular de archivos.
+- Modularización de Permisos y MainActivity:
+  * permission/StoragePermissionManager: gestor de permisos adaptativo según API (Android 10 a 14+) y soporte de MANAGE_EXTERNAL_STORAGE.
+  * MainActivity: inicialización limpia delegando en StoragePermissionManager.
+
+- Documentación y Políticas sincronizadas:
+  * ESTRUCTURE.md actualizado con la nueva arquitectura modular y flujos CI/CD.
+  * CONTRIBUTING.md creado estableciendo la política de contribuciones.
+  * README.md actualizado con guía de Secrets y uso del Action de Telegram.
+
+- CI/CD y Automatización:
+  * .github/workflows/build_apk_debug.yml: compilación de APK Debug bajo demanda (manual workflow_dispatch) con caché inteligente de Gradle y pip, firma automática y entrega remota (hasta 2GB).

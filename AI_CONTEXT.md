@@ -42,3 +42,6 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
    - `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE` para Android 10-12 (API 29-32).
    - `MANAGE_EXTERNAL_STORAGE` (Settings Action) para acceso profundo en Android 11+.
 5. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
+6. **Automatización y Despliegue CI/CD**:
+   - `build_apk_debug.yml`: Compila el APK Debug con firma autogenerada en el runner y entrega directa remota (hasta 2GB).
+   - `sync_zip.yml`: Sincronización continua y unificación de commits desde archivos comprimidos.

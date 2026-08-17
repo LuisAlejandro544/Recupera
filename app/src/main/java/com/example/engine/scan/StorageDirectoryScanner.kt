@@ -1,11 +1,8 @@
 package com.example.engine.scan
 
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Environment
-import android.util.Log
+import com.example.engine.extractor.MediaMetadataExtractor
 import com.example.engine.filter.ActiveGalleryFilter
 import com.example.engine.health.FileHealthEvaluator
 import com.example.model.MediaType
@@ -25,24 +22,13 @@ object StorageDirectoryScanner {
         activeFingerprints: Set<String>,
         onFileScanned: (String) -> Unit
     ) {
-        val targetDirs = listOf(
-            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), ".thumbnails"),
-            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), ".thumbnails"),
-            File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), ".thumbnails"),
-            File(context.cacheDir, "thumbnails"),
-            File(context.externalCacheDir, "thumbnails")
+        ThumbnailCacheScanner.scanThumbnailDirectories(
+            context = context,
+            onFileFound = { file ->
+                addMediaIfNew(file, RecoverySource.THUMBNAILS_CACHE, foundPhotos, seenPaths, activePaths, activeFingerprints)
+            },
+            onFileScanned = onFileScanned
         )
-
-        for (dir in targetDirs) {
-            if (dir.exists() && dir.isDirectory) {
-                dir.walkTopDown().maxDepth(3).forEach { file ->
-                    onFileScanned(file.absolutePath)
-                    if (file.isFile && FileHealthEvaluator.isValidMediaFile(file)) {
-                        addMediaIfNew(file, RecoverySource.THUMBNAILS_CACHE, foundPhotos, seenPaths, activePaths, activeFingerprints)
-                    }
-                }
-            }
-        }
     }
 
     fun scanHiddenAndAppCaches(
@@ -53,45 +39,13 @@ object StorageDirectoryScanner {
         activeFingerprints: Set<String>,
         onFileScanned: (String) -> Unit
     ) {
-        val dirsToScan = listOf(
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/.Statuses"),
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Video"),
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Video/.trash"),
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Audio"),
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Audio/.trash"),
-            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Voice Notes"),
-            File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/.Statuses"),
-            File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Video"),
-            File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Audio"),
-            File(Environment.getExternalStorageDirectory(), "Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes"),
-            File(Environment.getExternalStorageDirectory(), "Telegram/Telegram Images"),
-            File(Environment.getExternalStorageDirectory(), "Telegram/Telegram Video"),
-            File(Environment.getExternalStorageDirectory(), "Telegram/Telegram Audio"),
-            File(Environment.getExternalStorageDirectory(), "Recordings"),
-            File(Environment.getExternalStorageDirectory(), "Music"),
-            File(Environment.getExternalStorageDirectory(), "Voice Recorder"),
-            File(context.cacheDir, "image_cache"),
-            File(context.cacheDir, "video_cache"),
-            File(context.cacheDir, "audio_cache"),
-            File(context.cacheDir, "coil"),
-            context.externalCacheDir
+        MessagingAppScanner.scanMessagingAndAppCaches(
+            context = context,
+            onFileFound = { file, source ->
+                addMediaIfNew(file, source, foundPhotos, seenPaths, activePaths, activeFingerprints)
+            },
+            onFileScanned = onFileScanned
         )
-
-        for (dir in dirsToScan) {
-            if (dir != null && dir.exists() && dir.isDirectory) {
-                dir.walkTopDown().maxDepth(3).forEach { file ->
-                    onFileScanned(file.absolutePath)
-                    if (file.isFile && FileHealthEvaluator.isValidMediaFile(file)) {
-                        val source = if (file.absolutePath.contains(".nomedia") || file.name.startsWith(".")) {
-                            RecoverySource.HIDDEN_VAULT
-                        } else {
-                            RecoverySource.APP_TEMP_CACHE
-                        }
-                        addMediaIfNew(file, source, foundPhotos, seenPaths, activePaths, activeFingerprints)
-                    }
-                }
-            }
-        }
     }
 
     fun deepScanDirectory(
@@ -103,28 +57,14 @@ object StorageDirectoryScanner {
         maxDepth: Int,
         onFileScanned: (String) -> Unit
     ) {
-        try {
-            directory.walkTopDown()
-                .maxDepth(maxDepth)
-                .onEnter { file ->
-                    // Skip restricted internal dirs to avoid slow permission faults
-                    !file.absolutePath.contains("/Android/data") && !file.absolutePath.contains("/Android/obb")
-                }
-                .forEach { file ->
-                    onFileScanned(file.absolutePath)
-                    if (file.isFile && FileHealthEvaluator.isValidMediaFile(file)) {
-                        val source = when {
-                            file.absolutePath.contains(".thumbnails") -> RecoverySource.THUMBNAILS_CACHE
-                            file.absolutePath.contains(".nomedia") || file.name.startsWith(".") -> RecoverySource.HIDDEN_VAULT
-                            file.absolutePath.contains("cache", ignoreCase = true) -> RecoverySource.APP_TEMP_CACHE
-                            else -> RecoverySource.DEEP_STORAGE
-                        }
-                        addMediaIfNew(file, source, foundPhotos, seenPaths, activePaths, activeFingerprints)
-                    }
-                }
-        } catch (e: Exception) {
-            Log.w("StorageDirScanner", "Deep scan error in ${directory.path}: ${e.message}")
-        }
+        DeepStorageScanner.deepScanDirectory(
+            directory = directory,
+            maxDepth = maxDepth,
+            onFileFound = { file, source ->
+                addMediaIfNew(file, source, foundPhotos, seenPaths, activePaths, activeFingerprints)
+            },
+            onFileScanned = onFileScanned
+        )
     }
 
     private fun addMediaIfNew(
@@ -152,48 +92,21 @@ object StorageDirectoryScanner {
         val isVideo = ext in FileHealthEvaluator.supportedVideoExtensions
         val isAudio = ext in FileHealthEvaluator.supportedAudioExtensions
 
-        var width = 0
-        var height = 0
-        var durationMs = 0L
-
-        if (isVideo) {
-            try {
-                val retriever = MediaMetadataRetriever()
-                retriever.setDataSource(path)
-                val w = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
-                val h = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
-                val dur = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
-                retriever.release()
-
-                if (rotation == 90 || rotation == 270) {
-                    width = h
-                    height = w
-                } else {
-                    width = w
-                    height = h
-                }
-                durationMs = dur
-            } catch (_: Exception) {}
-        } else if (isAudio) {
-            try {
-                val retriever = MediaMetadataRetriever()
-                retriever.setDataSource(path)
-                val dur = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                retriever.release()
-                durationMs = dur
-            } catch (_: Exception) {}
-        } else {
-            try {
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(path, options)
-                width = options.outWidth
-                height = options.outHeight
-            } catch (_: Exception) {}
+        val metadata = when {
+            isVideo -> MediaMetadataExtractor.extractVideoMetadata(file)
+            isAudio -> MediaMetadataExtractor.extractAudioMetadata(file)
+            else -> MediaMetadataExtractor.extractImageDimensions(file)
         }
 
-        val dimStr = if (width > 0 && height > 0) "${width}x${height}" else null
-        val health = FileHealthEvaluator.calculateFileHealth(file, isVideo, isAudio, durationMs, width, height, source)
+        val health = FileHealthEvaluator.calculateFileHealth(
+            file = file,
+            isVideo = isVideo,
+            isAudio = isAudio,
+            durationMs = metadata.durationMs,
+            width = metadata.width,
+            height = metadata.height,
+            source = source
+        )
 
         val mediaType = when {
             isVideo -> MediaType.VIDEO
@@ -211,10 +124,10 @@ object StorageDirectoryScanner {
                 lastModifiedTimestamp = file.lastModified(),
                 sourceCategory = source,
                 fileExtension = ext,
-                dimensions = dimStr,
+                dimensions = metadata.dimensions,
                 isSample = false,
                 mediaType = mediaType,
-                durationMs = durationMs,
+                durationMs = metadata.durationMs,
                 health = health
             )
         )

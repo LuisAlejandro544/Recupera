@@ -40,13 +40,25 @@ Aplicación nativa para Android diseñada para **escanear, previsualizar y resta
 
 ---
 
-## 📦 Sincronización de Código desde Archivos ZIP (GitHub Action)
+## 📦 Flujos de Trabajo Automatizados (GitHub Actions)
 
-El repositorio cuenta con un flujo de trabajo automatizado en `.github/workflows/sync_zip.yml`:
+### 1. 🤖 Compilación de APK Debug (`build_apk_debug.yml`)
+Compila el APK Debug bajo demanda (**activación manual**) directamente en el runner de GitHub Actions con firma automática (`debug.keystore`), caché persistente de Gradle para compilaciones ultrarrápidas y entrega directa remota (hasta **2 GB**):
 
-1. **Subida de Archivos**: Sube un archivo comprimido (`.zip`, `.7z`, `.tar.gz`, `.tar`, `.tgz`) dentro del directorio `zip/`.
-2. **Mensaje de Commit Personalizado**: Puedes escribir un mensaje en el archivo `commit_message.txt` en la raíz del proyecto para definir el mensaje del commit resultante.
-3. **Extracción y Sobreescritura Automática**: El Action extrae el contenido, sincroniza y sobreescribe los archivos correspondientes, limpia el archivo comprimido procesado y realiza un commit unificado (`--amend` y `force-push`) manteniendo un historial limpio.
+- **Activación Manual (`workflow_dispatch`)**: Se ejecuta únicamente cuando tú lo decides desde la pestaña *Actions* de GitHub.
+- **Caché Inteligente de Gradle y Pip**: Reutiliza dependencias y artefactos previamente descargados (`gradle/actions/setup-gradle@v4`) reduciendo drásticamente el tiempo de compilación.
+- **Firma Automática**: Genera el keystore de debug automáticamente en la máquina virtual antes de compilar.
+- **Entrega Directa de Alta Capacidad (2 GB)**: Protocolo directo de entrega evitando el límite estricto de los artefactos estándar o APIs básicas.
+- **Secrets Requeridos en GitHub**:
+  * `TELEGRAM_API_ID`: Tu `App api_id` obtenido en [my.telegram.org](https://my.telegram.org) (Número entero).
+  * `TELEGRAM_API_HASH`: Tu `App api_hash` obtenido en [my.telegram.org](https://my.telegram.org) (Cadena hexadecimal).
+  * `TELEGRAM_BOT_TOKEN`: Token de autenticación del bot de entrega (ej: `123456789:ABCdefGhI...`).
+  * `TELEGRAM_CHAT_ID`: ID numérico de tu chat/grupo/canal o `@username` de destino.
+
+### 2. 🗜️ Sincronización de Código desde Archivos ZIP (`sync_zip.yml`)
+1. Sube un archivo comprimido (`.zip`, `.7z`, `.tar.gz`, `.tar`, `.tgz`) dentro del directorio `zip/`.
+2. Escribe el mensaje deseado en `commit_message.txt`.
+3. El Action extrae el contenido, sincroniza y sobreescribe los archivos correspondientes, limpia el archivo temporal y realiza un commit unificado (`--amend` y `force-push`).
 
 ---
 
@@ -85,6 +97,12 @@ Esta app está optimizada para ser descargada e instalada en formato **APK direc
 - **Sin Servidores**: La aplicación no tiene dependencias backend ni sube archivos a ningún servidor.
 - **Sin Root Requerido**: Utiliza las APIs oficiales de Android para garantizar la integridad del sistema de archivos.
 - **Permisos Transparentes**: Solo solicita permisos de lectura/escritura de almacenamiento (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `MANAGE_EXTERNAL_STORAGE` en Android 11+).
+
+---
+
+## 🤝 Contribuciones
+
+Por el momento, **no se aceptan contribuciones directas ni Pull Requests de código externo** mientras se consolida la arquitectura y el roadmap principal. Para más detalles, consulta [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

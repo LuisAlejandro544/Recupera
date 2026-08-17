@@ -1,0 +1,171 @@
+name: Build APK Debug
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deliver:
+    name: Build APK Debug & Direct Delivery
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle & Cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-cleanup: true
+
+      - name: Ensure Android Debug Keystore Exists
+        run: |
+          if [ ! -f debug.keystore ]; then
+            echo "Generating debug.keystore..."
+            keytool -genkey -v -keystore debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "debug.keystore generated successfully."
+          else
+            echo "debug.keystore already exists."
+          fi
+
+      - name: Ensure Gradle Wrapper is Executable
+        run: |
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+          else
+            gradle wrapper
+            chmod +x gradlew
+          fi
+
+      - name: Build Debug APK
+        run: |
+          ./gradlew assembleDebug --build-cache --parallel --stacktrace
+
+      - name: Locate Built APK
+        id: find-apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug/ -type f -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+            echo "Error: Debug APK not found."
+            exit 1
+          fi
+          
+          APK_NAME=$(basename "$APK_PATH")
+          APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+          
+          echo "Found APK: $APK_PATH ($APK_SIZE)"
+          echo "path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "size=$APK_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Set up Delivery Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Delivery Client
+        run: |
+          pip install --upgrade telethon
+
+      - name: Deliver APK Package
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          APK_PATH: ${{ steps.find-apk.outputs.path }}
+          APK_NAME: ${{ steps.find-apk.outputs.name }}
+          APK_SIZE: ${{ steps.find-apk.outputs.size }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          python - << 'EOF'
+          import os
+          import sys
+          import asyncio
+          from telethon import TelegramClient
+
+          api_id_raw = os.environ.get("TELEGRAM_API_ID", "").strip()
+          api_hash = os.environ.get("TELEGRAM_API_HASH", "").strip()
+          bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          chat_id_raw = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+          apk_path = os.environ.get("APK_PATH", "").strip()
+          apk_name = os.environ.get("APK_NAME", "RecuperadorPro-debug.apk")
+          apk_size = os.environ.get("APK_SIZE", "N/A")
+          commit_sha = os.environ.get("COMMIT_SHA", "")[:7]
+          commit_msg = os.environ.get("COMMIT_MSG", "Manual Trigger / Update").split('\n')[0]
+
+          if not all([api_id_raw, api_hash, bot_token, chat_id_raw, apk_path]):
+              print("ERROR: Missing delivery credentials:")
+              print(f" - API_ID: {'SET' if api_id_raw else 'MISSING'}")
+              print(f" - API_HASH: {'SET' if api_hash else 'MISSING'}")
+              print(f" - BOT_TOKEN: {'SET' if bot_token else 'MISSING'}")
+              print(f" - CHAT_ID: {'SET' if chat_id_raw else 'MISSING'}")
+              print(f" - APK_PATH: {'SET' if apk_path else 'MISSING'}")
+              sys.exit(1)
+
+          try:
+              api_id = int(api_id_raw)
+          except ValueError:
+              print(f"ERROR: API_ID must be an integer, got: {api_id_raw}")
+              sys.exit(1)
+
+          try:
+              chat_id = int(chat_id_raw)
+          except ValueError:
+              chat_id = chat_id_raw
+
+          caption = (
+              f"📱 <b>Recuperador Pro - APK Debug Compilado</b>\n\n"
+              f"📦 <b>Archivo:</b> <code>{apk_name}</code>\n"
+              f"⚖️ <b>Tamaño:</b> <code>{apk_size}</code>\n"
+              f"🔖 <b>Commit:</b> <code>{commit_sha}</code> - {commit_msg}\n"
+              f"⚡ <b>Firma:</b> Generada automáticamente (Debug Keystore)\n"
+              f"🚀 <b>Listo para instalar en tu teléfono</b>"
+          )
+
+          async def upload_file():
+              print(f"Connecting to delivery service...")
+              client = TelegramClient('github_action_bot_session', api_id, api_hash)
+              await client.start(bot_token=bot_token)
+              
+              print(f"Delivering APK '{apk_path}' ({apk_size}) to target chat...")
+              
+              last_percent = -1
+              def progress(current, total):
+                  nonlocal last_percent
+                  percent = int((current / total) * 100)
+                  if percent != last_percent and percent % 10 == 0:
+                      last_percent = percent
+                      print(f"Delivery progress: {percent}% ({current}/{total} bytes)")
+
+              await client.send_file(
+                  entity=chat_id,
+                  file=apk_path,
+                  caption=caption,
+                  parse_mode='html',
+                  progress_callback=progress
+              )
+              print("✅ APK successfully delivered!")
+              await client.disconnect()
+
+          asyncio.run(upload_file())
+          EOF
