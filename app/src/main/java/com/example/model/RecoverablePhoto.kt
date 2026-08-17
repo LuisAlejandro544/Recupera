@@ -142,3 +142,49 @@ data class OrphanCleanResult(
             }
         }
 }
+
+data class RepairResult(
+    val isSuccess: Boolean,
+    val repairedFilePath: String? = null,
+    val repairedHealth: FileHealth? = null,
+    val message: String = ""
+)
+
+data class DuplicateGroup(
+    val id: String,
+    val primaryPhoto: RecoverablePhoto,
+    val duplicates: List<RecoverablePhoto>,
+    val totalWastedBytes: Long
+) {
+    val formattedWastedSize: String
+        get() {
+            if (totalWastedBytes <= 0) return "0 KB"
+            val kb = totalWastedBytes / 1024.0
+            val mb = kb / 1024.0
+            return if (mb >= 1.0) {
+                String.format("%.1f MB", mb)
+            } else {
+                String.format("%.0f KB", kb)
+            }
+        }
+}
+
+data class DuplicateScanResult(
+    val groups: List<DuplicateGroup> = emptyList(),
+    val totalDuplicatesCount: Int = 0,
+    val totalWastedBytes: Long = 0L
+) {
+    val formattedTotalWastedSize: String
+        get() {
+            if (totalWastedBytes <= 0) return "0 KB"
+            val kb = totalWastedBytes / 1024.0
+            val mb = kb / 1024.0
+            val gb = mb / 1024.0
+            return when {
+                gb >= 1.0 -> String.format("%.2f GB", gb)
+                mb >= 1.0 -> String.format("%.1f MB", mb)
+                else -> String.format("%.0f KB", kb)
+            }
+        }
+}
+

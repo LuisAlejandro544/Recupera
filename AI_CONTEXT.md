@@ -37,16 +37,18 @@ Este archivo proporciona contexto técnico crítico para cualquier modelo de len
 1. **Escaneo Asíncrono**: Todo el trabajo de I/O de disco debe ejecutarse en `Dispatchers.IO`. Nunca bloquear el hilo principal (`Dispatchers.Main`).
 2. **Previsualización Multimedia**: Mantener el límite de vista previa de 5 segundos con parada automática y liberación de `MediaPlayer` / `VideoView` para proteger la memoria RAM. Para documentos, mostrar metadatos ofimáticos y fragmentos de texto limpios.
 3. **Limpieza de Miniaturas Huérfanas**: El purgador de miniaturas en `.thumbnails` solo debe eliminar archivos si su contraparte original no existe en la galería activa (`isFileInActiveGallery`).
-4. **Medidor de Salud**: Cada archivo debe contar con su objeto `FileHealth` calculado al escanear, evaluando extensión, cabecera de bytes (Magic Bytes), resolución/duración y ubicación fuente.
-5. **Manejo de Permisos**:
+4. **Reparación de Cabeceras (Magic Bytes)**: Toda reparación debe generar un archivo temporal en `context.cacheDir` antes de la inserción en MediaStore, asegurando que el archivo original no se corrompa si la reconstrucción no es exitosa.
+5. **Detector de Duplicados**: El cálculo de hash debe usar un muestreo selectivo (primeros 16 KB + últimos 4 KB) para evitar leer gigabytes de datos en memoria RAM o saturar el bus I/O del procesador móvil.
+6. **Medidor de Salud**: Cada archivo debe contar con su objeto `FileHealth` calculado al escanear, evaluando extensión, cabecera de bytes (Magic Bytes), resolución/duración y ubicación fuente.
+7. **Manejo de Permisos**:
    - `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO` y `READ_MEDIA_AUDIO` para Android 13+ (API 33+).
    - `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE` para Android 10-12 (API 29-32).
    - `MANAGE_EXTERNAL_STORAGE` (Settings Action) para acceso profundo en Android 11+.
-6. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
-7. **Automatización y Despliegue CI/CD**:
+8. **Pruebas Locales**: Ejecutar tests con `compile_applet` o pruebas unitarias con Robolectric sin depender de un emulador físico conectado a ADB.
+9. **Automatización y Despliegue CI/CD**:
    - `build_apk_debug.yml`: Compila el APK Debug con firma autogenerada en el runner y entrega directa remota (hasta 2GB).
    - `sync_zip.yml`: Sincronización continua y unificación de commits desde archivos comprimidos.
-8. **Integración con Shizuku y Sui (ADB / Root)**:
+10. **Integración con Shizuku y Sui (ADB / Root)**:
    - Shizuku opera mediante un IPC Binder (`rikka.shizuku.Shizuku`) con UID 2000 (Shell ADB) o UID 0 (Root).
    - Soporte automático para `Sui` (Magisk) mediante `rikka.sui.Sui.init()` y verificación con `Sui.isSui()`.
    - Implementación de `ShizukuScanUserService` vinculado mediante `Shizuku.bindUserService(UserServiceArgs, ...)` para ejecutar código nativo en el proceso Shell sin restricciones de `Android/data`.

@@ -155,4 +155,72 @@ class ExampleRobolectricTest {
         assertFalse(stateRoot.isReadyForEnhancedScan)
         assertEquals("Root (Superusuario)", stateRoot.uidLabel)
     }
+
+    @Test
+    fun `test header repair on damaged jpeg file`() = kotlinx.coroutines.test.runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val tempFile = java.io.File(context.cacheDir, "damaged_photo.jpg")
+        // Write damaged payload without JPEG SOI (FF D8)
+        tempFile.writeBytes(byteArrayOf(0x00, 0x00, 0xFF.toByte(), 0xDB.toByte(), 0x00, 0x43, 0x00, 0x01))
+
+        val damagedPhoto = RecoverablePhoto(
+            id = "repair_1",
+            name = "damaged_photo.jpg",
+            filePath = tempFile.absolutePath,
+            fileSizeBytes = tempFile.length(),
+            lastModifiedTimestamp = System.currentTimeMillis(),
+            sourceCategory = RecoverySource.THUMBNAILS_CACHE,
+            fileExtension = "jpg",
+            health = FileHealth(percentage = 20, level = HealthLevel.DAMAGED, description = "Cabecera corrupta")
+        )
+
+        assertTrue(com.example.engine.repair.HeaderRepairEngine.isRepairRecommended(damagedPhoto))
+
+        val result = com.example.engine.repair.HeaderRepairEngine.repairMediaHeader(context, damagedPhoto)
+        assertTrue(result.isSuccess)
+        assertTrue(result.repairedFilePath != null)
+        val repairedFile = java.io.File(result.repairedFilePath!!)
+        assertTrue(repairedFile.exists())
+        val headerBytes = repairedFile.readBytes().take(2).toByteArray()
+        assertEquals(0xFF.toByte(), headerBytes[0])
+        assertEquals(0xD8.toByte(), headerBytes[1])
+    }
+
+    @Test
+    fun `test duplicate detector groups identical files`() = kotlinx.coroutines.test.runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file1 = java.io.File(context.cacheDir, "dup1.jpg")
+        val file2 = java.io.File(context.cacheDir, "dup2.jpg")
+        val content = "IDENTICAL_IMAGE_CONTENT_SAMPLE_FOR_TESTING_123456789".toByteArray()
+        file1.writeBytes(content)
+        file2.writeBytes(content)
+
+        val photo1 = RecoverablePhoto(
+            id = "dup_1",
+            name = "IMG_001.jpg",
+            filePath = file1.absolutePath,
+            fileSizeBytes = file1.length(),
+            lastModifiedTimestamp = System.currentTimeMillis(),
+            sourceCategory = RecoverySource.TRASH_MEDIASTORE,
+            fileExtension = "jpg",
+            health = FileHealth(percentage = 100, level = HealthLevel.EXCELLENT, description = "Intacto")
+        )
+
+        val photo2 = RecoverablePhoto(
+            id = "dup_2",
+            name = "thumb_001.jpg",
+            filePath = file2.absolutePath,
+            fileSizeBytes = file2.length(),
+            lastModifiedTimestamp = System.currentTimeMillis(),
+            sourceCategory = RecoverySource.THUMBNAILS_CACHE,
+            fileExtension = "jpg",
+            health = FileHealth(percentage = 70, level = HealthLevel.GOOD, description = "Miniatura")
+        )
+
+        val scanResult = com.example.engine.duplicate.DuplicateMediaDetector.findDuplicates(listOf(photo1, photo2))
+        assertEquals(1, scanResult.groups.size)
+        assertEquals(1, scanResult.totalDuplicatesCount)
+        assertEquals(photo1.id, scanResult.groups[0].primaryPhoto.id)
+        assertEquals(photo2.id, scanResult.groups[0].duplicates[0].id)
+    }
 }

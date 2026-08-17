@@ -78,9 +78,19 @@ Plan de evolución estratégica y técnica para el desarrollo de **Recuperador P
   - Lectura profunda de directorios restringidos en Android 11+ (`Android/data`, WhatsApp, Telegram, papeleras de Samsung Gallery `com.sec.android.gallery3d` y Xiaomi `com.miui.gallery`).
   - Filtrado contra biblioteca activa y cálculo de diagnóstico `FileHealth`.
   - Terminación limpia de procesos remotos con código de transacción `16777115`.
+- [x] **Reparador Básico de Cabeceras (Magic Bytes Reconstructor)**:
+  - Motor heurístico `HeaderRepairEngine` para reconstrucción de bloques SOI/Magic Bytes en `JPEG`, `PNG`, `GIF`, `PDF`, `MP3`, `MP4`.
+  - Integración en `MediaRestorer` para archivos recuperables con estado `DAMAGED`.
+  - Botón de reparación interactivo en el visor `FullscreenPhotoPreview`.
+- [x] **Buscador y Limpiador de Archivos Duplicados Residuales**:
+  - Motor `DuplicateMediaDetector` con algoritmo de hashing selectivo de alta velocidad (16KB + 4KB).
+  - Selección inteligente de la versión de mayor calidad (salud/resolución) y agrupación de copias redundantes.
+  - Diálogo interactivo `DuplicateCleanerDialog` con purga segura y liberación de espacio en disco.
+- [ ] **Asistente de Rescate Rápido (On-Device AI Assistant)**:
+  - Procesamiento de lenguaje natural local (SLM / Heurística guiada) para interpretar consultas como *"recuperar fotos de WhatsApp de la semana pasada"* o *"buscar PDFs eliminados"*.
+  - Generación de filtros y rutas de escaneo optimizadas en tiempo real sin salir del dispositivo.
 - [ ] **Recuperación de Paquetes de Instalación (APKs)**:
   - Búsqueda de archivos `.apk` antiguos en cachés de descarga y almacenamiento interno.
-- [ ] **Detector de Archivos Duplicados**: Análisis hash (MD5/SHA-256) para identificar y eliminar duplicados.
 - [ ] **Soporte Multilenguaje Completo**: Español, Inglés, Portugués, Francés.
 - [ ] **Optimizaciones R8/ProGuard**: Reducción del tamaño final del APK a menos de 8 MB.
 - [ ] **Ficha para Uptodown**: Metadatos, capturas de pantalla de alta resolución y changelog optimizado.

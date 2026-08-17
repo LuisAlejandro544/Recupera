@@ -31,6 +31,10 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │   │   ├── PhotoRecoveryEngine.kt           # Orquestador del ciclo de escaneo y restauración
 │   │   │   │   │   ├── cleaner/
 │   │   │   │   │   │   └── OrphanThumbnailCleaner.kt    # Purgado y auditoría de miniaturas huérfanas en .thumbnails
+│   │   │   │   │   ├── duplicate/
+│   │   │   │   │   │   └── DuplicateMediaDetector.kt    # Detección y purga de duplicados residuales mediante hashing selectivo
+│   │   │   │   │   ├── repair/
+│   │   │   │   │   │   └── HeaderRepairEngine.kt        # Reconstructor de cabeceras binarias y Magic Bytes
 │   │   │   │   │   ├── extractor/
 │   │   │   │   │   │   └── MediaMetadataExtractor.kt    # Extracción desacoplada de metadatos (dimensiones, duración, snippets de documentos)
 │   │   │   │   │   ├── filter/
@@ -64,6 +68,8 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 │   │   │   │       │   ├── ScanProgressBanner.kt        # Banner de progreso de escaneo en tiempo real
 │   │   │   │       │   ├── settings/                        # ⚙️ Diálogos de configuración e integraciones
 │   │   │   │       │   │   └── ShizukuSettingsDialog.kt     # Diálogo de vinculación, guía y activación de Shizuku
+│   │   │   │       │   ├── duplicate/                       # 👯 Herramienta de detección de duplicados
+│   │   │   │       │   │   └── DuplicateCleanerDialog.kt    # Diálogo de gestión y purga de copias redundantes
 │   │   │   │       │   ├── cleaner/                         # 🧹 Herramienta de limpieza de miniaturas
 │   │   │   │       │   │   └── OrphanCleanerDialog.kt       # Diálogo modal para auditar y purgar miniaturas huérfanas
 │   │   │   │       │   ├── preview/                         # 🎬 Módulos de visualización y reproductores
@@ -110,6 +116,8 @@ Este documento detalla la estructura modular de paquetes, módulos de código de
 
 ### 1. Capa del Motor (`engine/`)
 - **`PhotoRecoveryEngine`**: Orquesta el flujo de escaneo delegando a módulos especializados manteniéndose por debajo de 150 líneas.
+- **`HeaderRepairEngine`**: Reconstructor binario de Magic Bytes y firmas de cabecera para archivos dañados (`JPEG`, `PNG`, `GIF`, `PDF`, `MP3`, `MP4`).
+- **`DuplicateMediaDetector`**: Motor de hashing selectivo de 2 niveles (tamaño -> hash 16KB+4KB) para identificar duplicados idénticos y purgar archivos redundantes.
 - **`OrphanThumbnailCleaner`**: Módulo especializado en auditar y purgar miniaturas huérfanas en `.thumbnails` sin archivos activos en el dispositivo, liberando espacio en almacenamiento interno.
 - **`MediaMetadataExtractor`**: Módulo desacoplado para extraer dimensiones, rotación, duraciones y snippets de texto en documentos ofimáticos (PDF, DOCX, TXT, etc.) sin sobrecargar la memoria RAM.
 - **`ActiveGalleryFilter`**: Indexa firmas de archivos activos en el almacenamiento para **excluirlos estrictamente de los resultados recuperables**.

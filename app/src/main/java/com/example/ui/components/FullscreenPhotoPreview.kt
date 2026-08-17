@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
@@ -40,6 +41,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.engine.repair.HeaderRepairEngine
+import com.example.model.HealthLevel
 import com.example.model.RecoverablePhoto
 import com.example.ui.components.preview.AudioPreviewPlayer
 import com.example.ui.components.preview.DetailRow
@@ -76,8 +80,10 @@ import java.util.Locale
 fun FullscreenPhotoPreview(
     photo: RecoverablePhoto,
     isRestoring: Boolean,
+    isRepairing: Boolean = false,
     onDismiss: () -> Unit,
-    onRestore: (RecoverablePhoto) -> Unit
+    onRestore: (RecoverablePhoto) -> Unit,
+    onRepairHeader: ((RecoverablePhoto) -> Unit)? = null
 ) {
     var showInfoSheet by remember { mutableStateOf(false) }
 
@@ -255,6 +261,47 @@ fun FullscreenPhotoPreview(
 
                                 // Health Meter Diagnostic Card
                                 FileHealthMeterSection(health = photo.health)
+
+                                if (HeaderRepairEngine.isRepairRecommended(photo) || photo.health.level == HealthLevel.DAMAGED) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    OutlinedButton(
+                                        onClick = { onRepairHeader?.invoke(photo) },
+                                        enabled = !isRepairing && !isRestoring,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(44.dp)
+                                            .testTag("repair_header_button"),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            containerColor = Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                        )
+                                    ) {
+                                        if (isRepairing) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                color = Color(0xFFF59E0B),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Reconstruyendo cabecera...", color = Color(0xFFFBBF24), fontSize = 12.sp)
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Build,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFBBF24),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                "Reparar Cabecera Binaria (${photo.fileExtension.uppercase()})",
+                                                color = Color(0xFFFBBF24),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 val mainIcon = when {

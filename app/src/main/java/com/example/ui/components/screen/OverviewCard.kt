@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Button
@@ -42,6 +43,7 @@ fun OverviewCard(
     onQuickScan: () -> Unit,
     onDeepScan: () -> Unit,
     onCleanOrphans: () -> Unit = {},
+    onFindDuplicates: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val formattedTotalSize = if (totalSizeBytes >= 1024 * 1024) {
@@ -103,31 +105,32 @@ fun OverviewCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action Buttons
+            // Primary Scan Actions Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedButton(
                     onClick = onQuickScan,
                     enabled = !isScanning,
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(46.dp)
                         .testTag("quick_scan_button"),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CyanPrimary.copy(alpha = 0.5f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.ImageSearch,
                         contentDescription = null,
                         tint = CyanPrimary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Rápido",
+                        text = "Escaneo Rápido",
                         color = Color.White,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -136,38 +139,50 @@ fun OverviewCard(
                     onClick = onDeepScan,
                     enabled = !isScanning,
                     modifier = Modifier
-                        .weight(1.1f)
-                        .height(44.dp)
+                        .weight(1.15f)
+                        .height(46.dp)
                         .testTag("deep_scan_button"),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyanPrimary,
+                        contentColor = Color.Black
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Restore,
                         contentDescription = null,
                         tint = Color.Black,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Profundo",
+                        text = "Escaneo Profundo",
                         color = Color.Black,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Secondary Optimization Tools Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 OutlinedButton(
                     onClick = onCleanOrphans,
                     enabled = !isScanning,
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(40.dp)
                         .testTag("clean_orphans_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color(0xFF1E293B).copy(alpha = 0.5f)
-                    )
+                        containerColor = Color(0xFF0F2E2B).copy(alpha = 0.4f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TealAccent.copy(alpha = 0.4f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.CleaningServices,
@@ -175,15 +190,44 @@ fun OverviewCard(
                         tint = TealAccent,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Limpiar",
+                        text = "Limpiar Miniaturas",
                         color = TealAccent,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onFindDuplicates,
+                    enabled = !isScanning && totalPhotosCount > 1,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .testTag("find_duplicates_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFF172554).copy(alpha = 0.4f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF60A5FA).copy(alpha = 0.4f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = Color(0xFF60A5FA),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Buscar Duplicados",
+                        color = Color(0xFF60A5FA),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
     }
 }
+

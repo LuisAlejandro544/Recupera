@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
+import com.example.engine.repair.HeaderRepairEngine
 import com.example.model.RecoverablePhoto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,9 +18,20 @@ object MediaRestorer {
 
     /**
      * Restores a photo, video or audio to the system MediaStore.
+     * Integrates automatic header repair if magic bytes are damaged.
      */
     suspend fun restoreMedia(context: Context, photo: RecoverablePhoto): Uri? = withContext(Dispatchers.IO) {
         try {
+            // Check if header repair is recommended and attempt repair before restoring
+            var sourcePath = photo.filePath
+            if (HeaderRepairEngine.isRepairRecommended(photo)) {
+                val repairResult = HeaderRepairEngine.repairMediaHeader(context, photo)
+                if (repairResult.isSuccess && repairResult.repairedFilePath != null) {
+                    sourcePath = repairResult.repairedFilePath
+                    Log.i("MediaRestorer", "Header repaired successfully prior to restoration: ${photo.name}")
+                }
+            }
+
             val contentResolver = context.contentResolver
             val restoredFileName = MediaDestinationResolver.generateRestoredFileName(photo)
             val mimeType = MimeTypeResolver.resolveMimeType(photo)
@@ -40,8 +52,8 @@ object MediaRestorer {
             val insertedUri = contentResolver.insert(targetCollection, contentValues) ?: return@withContext null
 
             // Read source bytes and write to destination
-            val sourceStream: InputStream? = if (photo.filePath.isNotBlank() && File(photo.filePath).exists()) {
-                File(photo.filePath).inputStream()
+            val sourceStream: InputStream? = if (sourcePath.isNotBlank() && File(sourcePath).exists()) {
+                File(sourcePath).inputStream()
             } else if (photo.contentUri != null) {
                 contentResolver.openInputStream(photo.contentUri)
             } else {
@@ -55,6 +67,7 @@ object MediaRestorer {
                     }
                 }
             }
+
 
             // Mark IS_PENDING = 0 on API 29+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
                             permissionLauncher.launch(permissionsToRequest)
                         } else {
                             permissionsGranted = true
+                            viewModel.startScan(deepScan = true)
                         }
                     }
 

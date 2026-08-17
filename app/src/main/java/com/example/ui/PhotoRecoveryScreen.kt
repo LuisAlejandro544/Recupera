@@ -53,6 +53,7 @@ import com.example.ui.components.PhotoCard
 import com.example.ui.components.RestoreSuccessDialog
 import com.example.ui.components.ScanProgressBanner
 import com.example.ui.components.cleaner.OrphanCleanerDialog
+import com.example.ui.components.duplicate.DuplicateCleanerDialog
 import com.example.ui.components.settings.ShizukuSettingsDialog
 import com.example.ui.components.screen.BatchRestoreBar
 import com.example.ui.components.screen.EmptyStateCard
@@ -76,6 +77,7 @@ fun PhotoRecoveryScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val previewPhoto by viewModel.selectedPreviewPhoto.collectAsState()
     val isRestoring by viewModel.isRestoring.collectAsState()
+    val isRepairingHeader by viewModel.isRepairingHeader.collectAsState()
     val restoreSummary by viewModel.restoreSummary.collectAsState()
 
     val showOrphanCleaner by viewModel.showOrphanCleanerDialog.collectAsState()
@@ -83,8 +85,15 @@ fun PhotoRecoveryScreen(
     val isCleaningOrphans by viewModel.isCleaningOrphans.collectAsState()
     val orphanCleanResult by viewModel.orphanCleanResult.collectAsState()
 
+    val showDuplicateCleaner by viewModel.showDuplicateCleanerDialog.collectAsState()
+    val isAnalyzingDuplicates by viewModel.isAnalyzingDuplicates.collectAsState()
+    val isCleaningDuplicates by viewModel.isCleaningDuplicates.collectAsState()
+    val duplicateScanResult by viewModel.duplicateScanResult.collectAsState()
+    val duplicateCleanResult by viewModel.duplicateCleanResult.collectAsState()
+
     val shizukuState by viewModel.shizukuState.collectAsState()
     val showShizukuDialog by viewModel.showShizukuDialog.collectAsState()
+
 
     // Calculate category counts
     val categoryCounts = remember(rawPhotos) {
@@ -236,7 +245,8 @@ fun PhotoRecoveryScreen(
                             isScanning = scanProgress.isScanning,
                             onQuickScan = { viewModel.startScan(deepScan = false) },
                             onDeepScan = { viewModel.startScan(deepScan = true) },
-                            onCleanOrphans = { viewModel.openOrphanCleaner() }
+                            onCleanOrphans = { viewModel.openOrphanCleaner() },
+                            onFindDuplicates = { viewModel.openDuplicateCleaner() }
                         )
 
                         // Scan Progress Live Banner
@@ -296,8 +306,10 @@ fun PhotoRecoveryScreen(
                 FullscreenPhotoPreview(
                     photo = photo,
                     isRestoring = isRestoring,
+                    isRepairing = isRepairingHeader,
                     onDismiss = { viewModel.closePreview() },
-                    onRestore = { viewModel.restoreSinglePhoto(it) }
+                    onRestore = { viewModel.restoreSinglePhoto(it) },
+                    onRepairHeader = { viewModel.repairPhotoHeader(it) }
                 )
             }
 
@@ -321,6 +333,18 @@ fun PhotoRecoveryScreen(
                     cleanResult = orphanCleanResult,
                     onCleanOrphans = { viewModel.executeOrphanClean() },
                     onDismiss = { viewModel.closeOrphanCleaner() }
+                )
+            }
+
+            // Duplicate Media Finder & Cleaner Dialog
+            if (showDuplicateCleaner) {
+                DuplicateCleanerDialog(
+                    isAnalyzing = isAnalyzingDuplicates,
+                    isCleaning = isCleaningDuplicates,
+                    duplicateResult = duplicateScanResult,
+                    cleanResult = duplicateCleanResult,
+                    onPurgeDuplicates = { viewModel.executePurgeDuplicates() },
+                    onDismiss = { viewModel.closeDuplicateCleaner() }
                 )
             }
 

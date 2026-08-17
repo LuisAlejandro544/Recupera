@@ -1,9 +1,21 @@
-feat(shizuku): integracion completa de Shizuku UserService, Sui y escaneo de bovedas protegidas
+fix(scan): resolver bloqueo de estado isScanning y condicion de carrera en inicio
 
-- Se incorporaron las dependencias oficiales `dev.rikka.shizuku:api` y `dev.rikka.shizuku:provider` (v13.1.5) junto a la declaración de `rikka.shizuku.ShizukuProvider` en `AndroidManifest.xml`.
-- Se implementó `ShizukuScanUserService` como servicio Binder independiente con UID 2000 (Shell ADB) o UID 0 (Root), transacciones IPC optimizadas y manejo de salida limpia con código de destrucción `16777115`.
-- Se desarrolló `ShizukuServiceClient` para orquestar la vinculación segura (`bindUserService`/`unbindUserService`) con `UserServiceArgs` y recuperación asíncrona mediante corrutinas.
-- Se agregó soporte para detección e inicialización de `Sui` (Magisk Root) y actualización dinámica de estado en `ShizukuManager` y `ShizukuState`.
-- Se creó `ShizukuVendorTrashScanner` y se integró en `PhotoRecoveryEngine` para escanear directorios de sistema inaccesibles en Android 11+ (`Android/data`, papeleras de Samsung Gallery `com.sec.android.gallery3d`, Xiaomi `com.miui.gallery`, WhatsApp, etc.).
-- Se implementó la categoría de filtrado `CategoryFilter.SHIZUKU` y la insignia visual `SourceBadge` para identificar elementos rescatados mediante privilegios de sistema.
-- Se mantuvieron sincronizadas las suites de pruebas unitarias y documentación técnica.
+- Se incorporó control de ciclo de vida con `scanJob: Job?` en `PhotoRecoveryViewModel`, permitiendo cancelar de forma limpia escaneos previos si el usuario interactúa o reinicia la búsqueda.
+- Se envolvieron las operaciones asíncronas de escaneo (`startScan`), restauración individual/lote (`restoreSinglePhoto`/`restoreSelectedPhotos`) y limpieza de miniaturas (`openOrphanCleaner`/`executeOrphanClean`) en bloques `try-catch-finally`, garantizando que las banderas `isScanning`, `isRestoring` y `isCleaningOrphans` siempre se restablezcan a `false` aun ante cancelaciones o excepciones de I/O.
+- Se eliminó el escaneo ciego prematuro en el bloque `init` del ViewModel para evitar condiciones de carrera antes de que Android conceda los permisos en tiempo de ejecución.
+- Se sincronizó el disparador de escaneo en `MainActivity` para ejecutarse exactamente una vez que los permisos de almacenamiento han sido verificados o concedidos por el usuario.
+
+feat(ui): renderizado en tiempo real y efectos visuales fluidos en barra de progreso de escaneo
+- Se optimizó `ScanProgressBanner` implementando interpolación lineal (`LinearEasing`) de baja latencia (150ms) en Compose para responder inmediatamente a cada archivo y carpeta analizada.
+- Se integró un efecto de brillo dinámico (`Brush.horizontalGradient` con `shimmerOffset`) y soporte para estado indeterminado en la fase inicial de preparación.
+
+feat(repair): reparador básico de cabeceras binarias (Magic Bytes Reconstructor)
+- Implementación de `HeaderRepairEngine` para diagnóstico y reconstrucción automática o manual de firmas mágicas dañadas en archivos multimedia (`JPEG`, `PNG`, `GIF`, `PDF`, `MP3`, `MP4`).
+- Integración en el flujo de restauración de `MediaRestorer`: si el archivo tiene cabecera corrupta (`DAMAGED`), se genera una copia reparada en caché temporal antes de insertar en MediaStore.
+- Botón interactivo "Reparar Cabecera Binaria" en `FullscreenPhotoPreview` para archivos con integridad comprometida.
+
+feat(cleaner): buscador y limpiador de archivos duplicados residuales
+- Creación de `DuplicateMediaDetector` con algoritmo multi-nivel de alta velocidad: filtrado instantáneo por tamaño y hash parcial ultra-eficiente (primeros 16 KB + últimos 4 KB) sin saturar I/O.
+- Detección inteligente del archivo principal de mayor calidad/resolución conservando la mejor copia y agrupando duplicados redundantes.
+- Diálogo interactivo `DuplicateCleanerDialog` con desglose visual de grupos, espacio desperdiciado y acción de purga directa con liberación de almacenamiento en disco.
+- Pruebas unitarias completas con Robolectric para validar la reconstrucción de cabeceras y agrupación de duplicados.
